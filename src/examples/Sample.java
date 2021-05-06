@@ -1,5 +1,5 @@
 
-import com.listennotes.podcastapi.Client;
+import com.listennotes.podcast_api.Client;
 
 import java.io.*;
 import java.util.Iterator;

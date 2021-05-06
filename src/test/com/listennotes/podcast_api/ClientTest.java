@@ -1,4 +1,4 @@
-package com.listennotes.podcastapi;
+package com.listennotes.podcast_api;
 
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;

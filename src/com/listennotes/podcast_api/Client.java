@@ -1,4 +1,4 @@
-package com.listennotes.podcastapi;
+package com.listennotes.podcast_api;
 
 import java.io.*;
 import java.util.Iterator;
@@ -8,7 +8,7 @@ import java.net.*;
 
 public final class Client
 {
-    public static final String strBaseUrl = "https://listen-api-test.listennotes.com/api/v2";
+    public static final String BASE_URL = "https://listen-api-test.listennotes.com/api/v2";
     /* public static final String strBaseUrl = "http://tester.com/api/v2"; */
     public static final String USER_AGENT = "podcast-api-java";
     public static final String BASE_URL_PROD = "https://listen-api.listennotes.com/api/v2";
@@ -23,7 +23,7 @@ public final class Client
 
     public String getUrl( String strPath )
     {
-        String strUrl = strBaseUrl;
+        String strUrl = BASE_URL;
         if ( this.API_KEY.length() > 0 ) {
             strUrl = BASE_URL_PROD;
         }
