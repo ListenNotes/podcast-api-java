@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.net.*;
 
-class Test
+public final class Sample
 {
     public static void main(String args[])
     {
@@ -22,11 +22,11 @@ class Test
             System.out.println( "RESPONSE LENGTH: " + strResponse.length() );
 
         } catch ( MalformedURLException mue ) {
-            System.out.println( "Malformed URL: " + mue.getMessage() );
+            System.out.println( "Malformed URL Exception: " + mue.getMessage() );
         } catch ( UnsupportedEncodingException uee ) {
-            System.out.println( "UnsupportedEncoding: " + uee.getMessage() );
+            System.out.println( "UnsupportedEncodingException: " + uee.getMessage() );
         } catch ( ProtocolException pe ) {
-            System.out.println( "Protocol: " + pe.getMessage() );
+            System.out.println( "ProtocolException: " + pe.getMessage() );
         } catch ( IOException ioe ) {
             System.out.println( "IOException: " + ioe.getMessage() );
         }

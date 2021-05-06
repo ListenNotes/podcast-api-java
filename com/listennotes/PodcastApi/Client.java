@@ -10,7 +10,8 @@ public final class Client
 {
     public static final String strBaseUrl = "https://listen-api-test.listennotes.com/api/v2";
     /* public static final String strBaseUrl = "http://tester.com/api/v2"; */
-    public static final String USER_AGENT = "ListenNotes-Java-API";
+    public static final String USER_AGENT = "podcast-api-java";
+    public static final String BASE_URL_PROD = "https://listen-api.listennotes.com/api/v2";
     public String API_KEY = "";
     public static HttpURLConnection con;
 
@@ -24,7 +25,7 @@ public final class Client
     {
         String strUrl = strBaseUrl;
         if ( this.API_KEY.length() > 0 ) {
-            strUrl = "https://listen-api.listennotes.com/api/v2";
+            strUrl = BASE_URL_PROD;
         }
 
         strUrl = strUrl + "/" + strPath;
