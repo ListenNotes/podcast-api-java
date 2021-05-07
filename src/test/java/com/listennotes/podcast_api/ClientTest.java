@@ -1,16 +1,31 @@
 package com.listennotes.podcast_api;
 
-import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.HashMap;
 import java.net.HttpURLConnection;
 
-public final class ClientTest
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+
+public final class ClientTest extends TestCase
 {
-    @Test
+    public ClientTest( String testName )
+    {
+        super( testName );
+    }
+
+    public static Test suite()
+    {
+        return new TestSuite( ClientTest.class );
+    }
+
+    public void testClient()
+    {
+        assertTrue( true );
+    }
+
     public void testSetApiKey() throws IOException 
     {
         Client tester = new Client();
@@ -22,9 +37,14 @@ public final class ClientTest
         con = tester.getConnection( tester.getUrl( "test" ) );
         assertEquals( con.getRequestProperty( "X-ListenAPI-Key" ), strApiKey );
 
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("q", "test");
+
+        String strResult = tester.search( parameters );
+        assertEquals( 401, tester.con.getResponseCode() );
+
     }
 
-    @Test
     public void testSearch() throws IOException 
     {
         Client tester = new Client();
