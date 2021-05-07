@@ -1,21 +1,64 @@
 package com.listennotes.podcast_api;
 
-import java.io.*;
+import com.listennotes.podcast_api.exception.*;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.io.Reader;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.HashMap;
-import java.net.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.LinkedList;
+
+import java.net.URL;
+import java.net.URLEncoder;
+import java.net.URLDecoder;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
 
 public final class Client
 {
     public static final String BASE_URL = "https://listen-api-test.listennotes.com/api/v2";
-    /* public static final String strBaseUrl = "http://tester.com/api/v2"; */
     public static final String USER_AGENT = "podcast-api-java";
     public static final String BASE_URL_PROD = "https://listen-api.listennotes.com/api/v2";
     public String API_KEY = "";
     public static HttpURLConnection con;
 
-    public String search( Map<String, String> mapParams ) throws UnsupportedEncodingException,MalformedURLException,ProtocolException,IOException
+    public String fetchEpisodeById( Map<String, String> mapParams ) throws Exception
+    {
+        String strId = mapParams.get( "id" );
+        mapParams.remove( "id" );
+        String strResponse = this.get( "episodes/" + strId, mapParams );
+        return strResponse;
+    }
+
+    public String fetchPodcastById( Map<String, String> mapParams ) throws Exception
+    {
+        String strId = mapParams.get( "id" );
+        mapParams.remove( "id" );
+        String strResponse = this.get( "podcasts/" + strId, mapParams );
+        return strResponse;
+    }
+
+    public String fetchBestPodcasts( Map<String, String> mapParams ) throws Exception
+    {
+        String strResponse = this.get( "best_podcasts", mapParams );
+        return strResponse;
+    }
+
+    public String typeahead( Map<String, String> mapParams ) throws Exception
+    {
+        String strResponse = this.get( "typeahead", mapParams );
+        return strResponse;
+    }
+
+    public String search( Map<String, String> mapParams ) throws Exception
     {
         String strResponse = this.get( "search", mapParams );
         return strResponse;
@@ -37,7 +80,7 @@ public final class Client
         this.API_KEY = strKey;
     }
 
-    public HttpURLConnection getConnection( String strUrl ) throws MalformedURLException,IOException
+    public HttpURLConnection getConnection( String strUrl ) throws Exception
     {
         URL url = new URL( strUrl );
         con = (HttpURLConnection) url.openConnection();
@@ -55,7 +98,7 @@ public final class Client
         return con;
     }
 
-    public String get( String strPath, Map<String, String> mapParams ) throws UnsupportedEncodingException,MalformedURLException,ProtocolException,IOException
+    public String get( String strPath, Map<String, String> mapParams ) throws Exception
     {
         String strUrl = getUrl( strPath );
 
@@ -76,6 +119,7 @@ public final class Client
         /* out.close(); */
 
         int status = con.getResponseCode();
+        processStatus( status );
 
         /* System.out.println( "Status: " + status ); */
 
@@ -101,7 +145,18 @@ public final class Client
         return content.toString();
     }
 
-    public static String getParamsString(Map<String, String> params) throws UnsupportedEncodingException
+    public void processStatus( int intStatus ) throws Exception
+    {
+        if ( intStatus == 401 ) {
+            throw new AuthenticationException( "Wrong api key or your account is suspended" );
+        } else if ( intStatus == 400 ) {
+            throw new InvalidRequestException( "Something wrong on your end (client side errors),"
+                                            + " e.g., missing required parameters");
+        } else {
+        }
+    }
+
+    public static String getParamsString(Map<String, String> params) throws Exception
     {
             StringBuilder result = new StringBuilder();
 
@@ -116,5 +171,17 @@ public final class Client
             return resultString.length() > 0
                 ? resultString.substring(0, resultString.length() - 1)
                 : resultString;
+    }
+
+    public static Map<String, String> splitQuery(URL url) throws Exception
+    {
+        Map<String, String> query_pairs = new LinkedHashMap<String, String>();
+        String query = url.getQuery();
+        String[] pairs = query.split("&");
+        for (String pair : pairs) {
+            int idx = pair.indexOf("=");
+            query_pairs.put(URLDecoder.decode(pair.substring(0, idx), "UTF-8"), URLDecoder.decode(pair.substring(idx + 1), "UTF-8"));
+        }
+        return query_pairs;
     }
 }

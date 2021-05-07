@@ -1,6 +1,7 @@
 package com.listennotes.podcast_api;
 /* import com.listennotes.podcast_api.Client; */
 
+import com.listennotes.podcast_api.exception.*;
 import java.io.*;
 import java.util.Iterator;
 import java.util.Map;
@@ -33,14 +34,19 @@ public final class Sample
             System.out.println("Usage this month: " + objClient.con.getHeaderField("x-listenapi-usage" ) + " requests" );
             System.out.println("Next billing date: " + objClient.con.getHeaderField("x-listenapi-nextbillingdate" ) );
 
-        } catch ( MalformedURLException mue ) {
-            System.out.println( "Malformed URL Exception: " + mue.getMessage() );
-        } catch ( UnsupportedEncodingException uee ) {
-            System.out.println( "UnsupportedEncodingException: " + uee.getMessage() );
-        } catch ( ProtocolException pe ) {
-            System.out.println( "ProtocolException: " + pe.getMessage() );
-        } catch ( IOException ioe ) {
-            System.out.println( "IOException: " + ioe.getMessage() );
+        } catch ( AuthenticationException ae ) {
+            System.out.println( "Authentication Issue: " + ae.getMessage() );
+        } catch ( InvalidRequestException ir ) {
+            System.out.println( "Invalid Request" + ir.getMessage() );
+        } catch ( Exception mue ) {
+        /* } catch ( MalformedURLException mue ) { */
+            System.out.println( "Application Exception: " + mue.getMessage() );
+        /* } catch ( UnsupportedEncodingException uee ) { */
+        /*     System.out.println( "UnsupportedEncodingException: " + uee.getMessage() ); */
+        /* } catch ( ProtocolException pe ) { */
+        /*     System.out.println( "ProtocolException: " + pe.getMessage() ); */
+        /* } catch ( IOException ioe ) { */
+        /*     System.out.println( "IOException: " + ioe.getMessage() ); */
         }
     }
 }
