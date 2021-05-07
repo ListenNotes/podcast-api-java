@@ -146,4 +146,63 @@ public final class ClientTest extends TestCase
         URL u = tester.con.getURL();
         assertEquals( u.getPath(), "/api/v2/episodes/" + id );
     }
+
+    public void testFetchCuratedPodcastsLists() throws Exception
+    {
+        Client tester = new Client();
+
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("page", "2");
+        String strResponse = tester.fetchCuratedPodcastsLists( parameters );
+        JSONObject oj = new JSONObject( strResponse );
+        assertTrue( oj.optInt( "total", 0 ) > 0 );
+        assertEquals( tester.con.getRequestMethod(), "GET" );
+        URL u = tester.con.getURL();
+        assertEquals( u.getPath(), "/api/v2/curated_podcasts" );
+        Map<String, String> params = tester.splitQuery( u );
+        assertEquals( params.get( "page" ), parameters.get( "page" ) );
+    }
+
+    public void testFetchPodcastGenres() throws Exception
+    {
+        Client tester = new Client();
+
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("top_level_only", "1");
+        String strResponse = tester.fetchPodcastGenres( parameters );
+        JSONObject oj = new JSONObject( strResponse );
+        assertTrue( oj.optJSONArray( "genres" ).length() > 0 );
+        assertEquals( tester.con.getRequestMethod(), "GET" );
+        URL u = tester.con.getURL();
+        assertEquals( u.getPath(), "/api/v2/genres" );
+        Map<String, String> params = tester.splitQuery( u );
+        assertEquals( params.get( "top_level_only" ), parameters.get( "top_level_only" ) );
+    }
+
+    public void testFetchPodcastRegions() throws Exception
+    {
+        Client tester = new Client();
+
+        Map<String, String> parameters = new HashMap<>();
+        String strResponse = tester.fetchPodcastRegions( parameters );
+        JSONObject oj = new JSONObject( strResponse );
+        assertTrue( oj.optJSONObject( "regions" ).length() > 0 );
+        assertEquals( tester.con.getRequestMethod(), "GET" );
+        URL u = tester.con.getURL();
+        assertEquals( u.getPath(), "/api/v2/regions" );
+    }
+
+    public void testFetchPodcastLanguages() throws Exception
+    {
+        Client tester = new Client();
+
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("top_level_only", "1");
+        String strResponse = tester.fetchPodcastLanguages( parameters );
+        JSONObject oj = new JSONObject( strResponse );
+        assertTrue( oj.optJSONArray( "languages" ).length() > 0 );
+        assertEquals( tester.con.getRequestMethod(), "GET" );
+        URL u = tester.con.getURL();
+        assertEquals( u.getPath(), "/api/v2/languages" );
+    }
 }

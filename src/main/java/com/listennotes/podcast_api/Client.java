@@ -30,7 +30,31 @@ public final class Client
     public String API_KEY = "";
     public static HttpURLConnection con;
 
-    public String fetchEpisodeById( Map<String, String> mapParams ) throws Exception
+    public String fetchPodcastLanguages( Map<String, String> mapParams ) throws Exception,ListenApiException
+    {
+        String strResponse = this.get( "languages", mapParams );
+        return strResponse;
+    }
+
+    public String fetchPodcastRegions( Map<String, String> mapParams ) throws Exception,ListenApiException
+    {
+        String strResponse = this.get( "regions", mapParams );
+        return strResponse;
+    }
+
+    public String fetchPodcastGenres( Map<String, String> mapParams ) throws Exception,ListenApiException
+    {
+        String strResponse = this.get( "genres", mapParams );
+        return strResponse;
+    }
+
+    public String fetchCuratedPodcastsLists( Map<String, String> mapParams ) throws Exception,ListenApiException
+    {
+        String strResponse = this.get( "curated_podcasts", mapParams );
+        return strResponse;
+    }
+
+    public String fetchEpisodeById( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
         String strId = mapParams.get( "id" );
         mapParams.remove( "id" );
@@ -38,7 +62,7 @@ public final class Client
         return strResponse;
     }
 
-    public String fetchPodcastById( Map<String, String> mapParams ) throws Exception
+    public String fetchPodcastById( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
         String strId = mapParams.get( "id" );
         mapParams.remove( "id" );
@@ -46,19 +70,19 @@ public final class Client
         return strResponse;
     }
 
-    public String fetchBestPodcasts( Map<String, String> mapParams ) throws Exception
+    public String fetchBestPodcasts( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
         String strResponse = this.get( "best_podcasts", mapParams );
         return strResponse;
     }
 
-    public String typeahead( Map<String, String> mapParams ) throws Exception
+    public String typeahead( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
         String strResponse = this.get( "typeahead", mapParams );
         return strResponse;
     }
 
-    public String search( Map<String, String> mapParams ) throws Exception
+    public String search( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
         String strResponse = this.get( "search", mapParams );
         return strResponse;
@@ -98,7 +122,7 @@ public final class Client
         return con;
     }
 
-    public String get( String strPath, Map<String, String> mapParams ) throws Exception
+    private String get( String strPath, Map<String, String> mapParams ) throws Exception
     {
         String strUrl = getUrl( strPath );
 
@@ -145,13 +169,19 @@ public final class Client
         return content.toString();
     }
 
-    public void processStatus( int intStatus ) throws Exception
+    private void processStatus( int intStatus ) throws Exception
     {
         if ( intStatus == 401 ) {
             throw new AuthenticationException( "Wrong api key or your account is suspended" );
+        } else if ( intStatus == 429 ) {
+            throw new RateLimitException( "You use FREE plan and you exceed the quota limit" );
+        } else if ( intStatus == 404 ) {
+            throw new NotFoundException( "Endpoint not exist, or podcast / episode not exist" );
         } else if ( intStatus == 400 ) {
             throw new InvalidRequestException( "Something wrong on your end (client side errors),"
                                             + " e.g., missing required parameters");
+        } else if ( intStatus >= 500 ) {
+            throw new ListenApiException( "Error on our end (unexpected server errors)" );
         } else {
         }
     }

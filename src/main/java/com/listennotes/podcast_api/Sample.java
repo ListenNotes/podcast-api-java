@@ -37,7 +37,13 @@ public final class Sample
         } catch ( AuthenticationException ae ) {
             System.out.println( "Authentication Issue: " + ae.getMessage() );
         } catch ( InvalidRequestException ir ) {
-            System.out.println( "Invalid Request" + ir.getMessage() );
+            System.out.println( "Invalid Request: " + ir.getMessage() );
+        } catch ( RateLimitException ir ) {
+            System.out.println( "Rate Limit: " + ir.getMessage() );
+        } catch ( NotFoundException ir ) {
+            System.out.println( "Not Found: " + ir.getMessage() );
+        } catch ( ListenApiException ir ) {
+            System.out.println( "Exception: " + ir.getMessage() );
         } catch ( Exception mue ) {
         /* } catch ( MalformedURLException mue ) { */
             System.out.println( "Application Exception: " + mue.getMessage() );
