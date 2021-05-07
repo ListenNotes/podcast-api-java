@@ -25,11 +25,12 @@ import java.net.ProtocolException;
 
 public final class Client
 {
-    public static final String BASE_URL = "https://listen-api-test.listennotes.com/api/v2";
+    public static final String BASE_URL_TEST = "https://listen-api-test.listennotes.com/api/v2";
     public static final String USER_AGENT = "podcast-api-java";
     public static final String BASE_URL_PROD = "https://listen-api.listennotes.com/api/v2";
     public String API_KEY = "";
     public static HttpURLConnection con;
+    public Map<String, String> requestParams;
 
     public String submitPodcast( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
@@ -164,7 +165,7 @@ public final class Client
 
     public String getUrl( String strPath )
     {
-        String strUrl = BASE_URL;
+        String strUrl = BASE_URL_TEST;
         if ( this.API_KEY.length() > 0 ) {
             strUrl = BASE_URL_PROD;
         }
@@ -188,8 +189,6 @@ public final class Client
         if ( this.API_KEY.length() > 0 ) {
             con.setRequestProperty( "X-ListenAPI-Key", this.API_KEY );
         }
-        /* con.setRequestProperty( "Content-Type", "application/json" ); */
-        /* String contentType = con.getHeaderField( "Content-Type"); */
         con.setConnectTimeout( 5000 );
         con.setReadTimeout( 5000 );
         con.setInstanceFollowRedirects( false );
@@ -200,6 +199,7 @@ public final class Client
     {
         String strUrl = getUrl( strPath );
 
+        this.requestParams = mapParams;
         String strParameters = getParamsString( mapParams );
         strUrl = strUrl;
 

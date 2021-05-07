@@ -300,6 +300,7 @@ public final class ClientTest extends TestCase
         JSONObject oj = new JSONObject( strResponse );
         assertTrue( oj.optJSONArray( "podcasts" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "POST" );
+        assertEquals( parameters.get( "ids" ), tester.requestParams.get( "ids" ) );
         URL u = tester.con.getURL();
         assertEquals( u.getPath(), "/api/v2/podcasts" );
     }
@@ -314,6 +315,7 @@ public final class ClientTest extends TestCase
         JSONObject oj = new JSONObject( strResponse );
         assertTrue( oj.optJSONArray( "episodes" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "POST" );
+        assertEquals( parameters.get( "ids" ), tester.requestParams.get( "ids" ) );
         URL u = tester.con.getURL();
         assertEquals( u.getPath(), "/api/v2/episodes" );
     }
@@ -325,12 +327,17 @@ public final class ClientTest extends TestCase
         Map<String, String> parameters = new HashMap<>();
         String id = "23";
         parameters.put("id", id );
+        parameters.put("reason", "User wants to delete podcast" );
         String strResponse = tester.deletePodcast( parameters );
         JSONObject oj = new JSONObject( strResponse );
         assertTrue( oj.optString( "status" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "DELETE" );
+
         URL u = tester.con.getURL();
         assertEquals( u.getPath(), "/api/v2/podcasts/" + id );
+
+        Map<String, String> params = tester.splitQuery( u );
+        assertEquals( params.get( "reason" ), parameters.get( "reason" ) );
     }
 
     public void testSubmitPodcast() throws Exception
@@ -343,6 +350,7 @@ public final class ClientTest extends TestCase
         JSONObject oj = new JSONObject( strResponse );
         assertTrue( oj.optString( "status" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "POST" );
+        assertEquals( parameters.get( "rss" ), tester.requestParams.get( "rss" ) );
         URL u = tester.con.getURL();
         assertEquals( u.getPath(), "/api/v2/podcasts/submit" );
     }

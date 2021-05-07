@@ -26,7 +26,7 @@ public final class Sample
             /* printJson( strResponse ); */
 
             /* System.out.println( "RESPONSE LENGTH: " + strResponse.length() ); */
-            System.out.println( "\n===Some Account Information ===" );
+            System.out.println( "\n=== Some Account Information ===" );
             System.out.println( "Free Quota this month: " + objClient.con.getHeaderField("x-listenapi-freequota") + " requests" );
             System.out.println("Usage this month: " + objClient.con.getHeaderField("x-listenapi-usage" ) + " requests" );
             System.out.println("Next billing date: " + objClient.con.getHeaderField("x-listenapi-nextbillingdate" ) );
