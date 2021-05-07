@@ -147,6 +147,21 @@ public final class ClientTest extends TestCase
         assertEquals( u.getPath(), "/api/v2/episodes/" + id );
     }
 
+    public void testFetchCuratedPodcastsListById() throws Exception
+    {
+        Client tester = new Client();
+
+        Map<String, String> parameters = new HashMap<>();
+        String id = "23";
+        parameters.put("id", id );
+        String strResponse = tester.fetchCuratedPodcastsListById( parameters );
+        JSONObject oj = new JSONObject( strResponse );
+        assertTrue( oj.optJSONArray( "podcasts" ).length() > 0 );
+        assertEquals( tester.con.getRequestMethod(), "GET" );
+        URL u = tester.con.getURL();
+        assertEquals( u.getPath(), "/api/v2/curated_podcasts/" + id );
+    }
+
     public void testFetchCuratedPodcastsLists() throws Exception
     {
         Client tester = new Client();
@@ -182,9 +197,7 @@ public final class ClientTest extends TestCase
     public void testFetchPodcastRegions() throws Exception
     {
         Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        String strResponse = tester.fetchPodcastRegions( parameters );
+        String strResponse = tester.fetchPodcastRegions();
         JSONObject oj = new JSONObject( strResponse );
         assertTrue( oj.optJSONObject( "regions" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "GET" );
@@ -195,10 +208,7 @@ public final class ClientTest extends TestCase
     public void testFetchPodcastLanguages() throws Exception
     {
         Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("top_level_only", "1");
-        String strResponse = tester.fetchPodcastLanguages( parameters );
+        String strResponse = tester.fetchPodcastLanguages();
         JSONObject oj = new JSONObject( strResponse );
         assertTrue( oj.optJSONArray( "languages" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "GET" );

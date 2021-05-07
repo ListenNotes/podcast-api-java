@@ -94,21 +94,31 @@ public final class Client
         return strResponse;
     }
 
-    public String fetchPodcastLanguages( Map<String, String> mapParams ) throws Exception,ListenApiException
+    public String fetchPodcastLanguages() throws Exception,ListenApiException
     {
-        String strResponse = this.get( "languages", mapParams );
+        Map<String, String> parameters = new HashMap<>();
+        String strResponse = this.get( "languages", parameters );
         return strResponse;
     }
 
-    public String fetchPodcastRegions( Map<String, String> mapParams ) throws Exception,ListenApiException
+    public String fetchPodcastRegions() throws Exception,ListenApiException
     {
-        String strResponse = this.get( "regions", mapParams );
+        Map<String, String> parameters = new HashMap<>();
+        String strResponse = this.get( "regions", parameters );
         return strResponse;
     }
 
     public String fetchPodcastGenres( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
         String strResponse = this.get( "genres", mapParams );
+        return strResponse;
+    }
+
+    public String fetchCuratedPodcastsListById( Map<String, String> mapParams ) throws Exception,ListenApiException
+    {
+        String strId = mapParams.get( "id" );
+        mapParams.remove( "id" );
+        String strResponse = this.get( "curated_podcasts/" + strId, mapParams );
         return strResponse;
     }
 
