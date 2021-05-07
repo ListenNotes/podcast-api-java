@@ -205,4 +205,135 @@ public final class ClientTest extends TestCase
         URL u = tester.con.getURL();
         assertEquals( u.getPath(), "/api/v2/languages" );
     }
+
+    public void testJustListen() throws Exception
+    {
+        Client tester = new Client();
+
+        String strResponse = tester.justListen();
+        JSONObject oj = new JSONObject( strResponse );
+        /* System.out.println( "DBG: " + oj.toString() ); */
+        assertTrue( oj.optInt( "audio_length_sec", 0 ) > 0 );
+        assertEquals( tester.con.getRequestMethod(), "GET" );
+        URL u = tester.con.getURL();
+        assertEquals( u.getPath(), "/api/v2/just_listen" );
+    }
+
+    public void testFetchRecommendationsForPodcast() throws Exception
+    {
+        Client tester = new Client();
+
+        Map<String, String> parameters = new HashMap<>();
+        String id = "23";
+        parameters.put("id", id );
+        String strResponse = tester.fetchRecommendationsForPodcast( parameters );
+        JSONObject oj = new JSONObject( strResponse );
+        assertTrue( oj.optJSONArray( "recommendations" ).length() > 0 );
+        assertEquals( tester.con.getRequestMethod(), "GET" );
+        URL u = tester.con.getURL();
+        assertEquals( u.getPath(), "/api/v2/podcasts/" + id + "/recommendations" );
+    }
+
+    public void testFetchRecommendationsForEpisode() throws Exception
+    {
+        Client tester = new Client();
+
+        Map<String, String> parameters = new HashMap<>();
+        String id = "23";
+        parameters.put("id", id );
+        String strResponse = tester.fetchRecommendationsForEpisode( parameters );
+        JSONObject oj = new JSONObject( strResponse );
+        assertTrue( oj.optJSONArray( "recommendations" ).length() > 0 );
+        assertEquals( tester.con.getRequestMethod(), "GET" );
+        URL u = tester.con.getURL();
+        assertEquals( u.getPath(), "/api/v2/episodes/" + id + "/recommendations" );
+    }
+
+    public void testFetchPlaylistById() throws Exception
+    {
+        Client tester = new Client();
+
+        Map<String, String> parameters = new HashMap<>();
+        String id = "23";
+        parameters.put("id", id );
+        String strResponse = tester.fetchPlaylistById( parameters );
+        JSONObject oj = new JSONObject( strResponse );
+        assertTrue( oj.optJSONArray( "items" ).length() > 0 );
+        assertEquals( tester.con.getRequestMethod(), "GET" );
+        URL u = tester.con.getURL();
+        assertEquals( u.getPath(), "/api/v2/playlists/" + id );
+    }
+
+    public void testFetchMyPlaylists() throws Exception
+    {
+        Client tester = new Client();
+
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("page", "2" );
+        String strResponse = tester.fetchMyPlaylists( parameters );
+        JSONObject oj = new JSONObject( strResponse );
+        assertTrue( oj.optJSONArray( "playlists" ).length() > 0 );
+        assertEquals( tester.con.getRequestMethod(), "GET" );
+        URL u = tester.con.getURL();
+        assertEquals( u.getPath(), "/api/v2/playlists" );
+        Map<String, String> params = tester.splitQuery( u );
+        assertEquals( params.get( "page" ), parameters.get( "page" ) );
+    }
+
+    public void testBatchFetchPodcasts() throws Exception
+    {
+        Client tester = new Client();
+
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put( "ids", "2,222,333,4444" );
+        String strResponse = tester.batchFetchPodcasts( parameters );
+        JSONObject oj = new JSONObject( strResponse );
+        assertTrue( oj.optJSONArray( "podcasts" ).length() > 0 );
+        assertEquals( tester.con.getRequestMethod(), "POST" );
+        URL u = tester.con.getURL();
+        assertEquals( u.getPath(), "/api/v2/podcasts" );
+    }
+
+    public void testBatchFetchEpisodes() throws Exception
+    {
+        Client tester = new Client();
+
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put( "ids", "2,222,333,4444" );
+        String strResponse = tester.batchFetchEpisodes( parameters );
+        JSONObject oj = new JSONObject( strResponse );
+        assertTrue( oj.optJSONArray( "episodes" ).length() > 0 );
+        assertEquals( tester.con.getRequestMethod(), "POST" );
+        URL u = tester.con.getURL();
+        assertEquals( u.getPath(), "/api/v2/episodes" );
+    }
+
+    public void testDeletePodcast() throws Exception
+    {
+        Client tester = new Client();
+
+        Map<String, String> parameters = new HashMap<>();
+        String id = "23";
+        parameters.put("id", id );
+        String strResponse = tester.deletePodcast( parameters );
+        JSONObject oj = new JSONObject( strResponse );
+        assertTrue( oj.optString( "status" ).length() > 0 );
+        assertEquals( tester.con.getRequestMethod(), "DELETE" );
+        URL u = tester.con.getURL();
+        assertEquals( u.getPath(), "/api/v2/podcasts/" + id );
+    }
+
+    public void testSubmitPodcast() throws Exception
+    {
+        Client tester = new Client();
+
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("rss", "http://myrss.com/rss" );
+        String strResponse = tester.submitPodcast( parameters );
+        JSONObject oj = new JSONObject( strResponse );
+        assertTrue( oj.optString( "status" ).length() > 0 );
+        assertEquals( tester.con.getRequestMethod(), "POST" );
+        URL u = tester.con.getURL();
+        assertEquals( u.getPath(), "/api/v2/podcasts/submit" );
+    }
 }

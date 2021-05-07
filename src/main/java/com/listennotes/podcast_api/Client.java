@@ -7,6 +7,7 @@ import java.io.UnsupportedEncodingException;
 import java.io.Reader;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
+import java.io.DataOutputStream;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -29,6 +30,69 @@ public final class Client
     public static final String BASE_URL_PROD = "https://listen-api.listennotes.com/api/v2";
     public String API_KEY = "";
     public static HttpURLConnection con;
+
+    public String submitPodcast( Map<String, String> mapParams ) throws Exception,ListenApiException
+    {
+        String strResponse = this.post( "podcasts/submit", mapParams );
+        return strResponse;
+    }
+
+    public String deletePodcast( Map<String, String> mapParams ) throws Exception,ListenApiException
+    {
+        String strId = mapParams.get( "id" );
+        mapParams.remove( "id" );
+        String strResponse = this.delete( "podcasts/" + strId, mapParams );
+        return strResponse;
+    }
+
+    public String batchFetchEpisodes( Map<String, String> mapParams ) throws Exception,ListenApiException
+    {
+        String strResponse = this.post( "episodes", mapParams );
+        return strResponse;
+    }
+
+    public String batchFetchPodcasts( Map<String, String> mapParams ) throws Exception,ListenApiException
+    {
+        String strResponse = this.post( "podcasts", mapParams );
+        return strResponse;
+    }
+
+    public String fetchMyPlaylists( Map<String, String> mapParams ) throws Exception,ListenApiException
+    {
+        String strResponse = this.get( "playlists", mapParams );
+        return strResponse;
+    }
+
+    public String fetchPlaylistById( Map<String, String> mapParams ) throws Exception,ListenApiException
+    {
+        String strId = mapParams.get( "id" );
+        mapParams.remove( "id" );
+        String strResponse = this.get( "playlists/" + strId, mapParams );
+        return strResponse;
+    }
+
+    public String fetchRecommendationsForEpisode( Map<String, String> mapParams ) throws Exception,ListenApiException
+    {
+        String strId = mapParams.get( "id" );
+        mapParams.remove( "id" );
+        String strResponse = this.get( "episodes/" + strId + "/recommendations", mapParams );
+        return strResponse;
+    }
+
+    public String fetchRecommendationsForPodcast( Map<String, String> mapParams ) throws Exception,ListenApiException
+    {
+        String strId = mapParams.get( "id" );
+        mapParams.remove( "id" );
+        String strResponse = this.get( "podcasts/" + strId + "/recommendations", mapParams );
+        return strResponse;
+    }
+
+    public String justListen() throws Exception,ListenApiException
+    {
+        Map<String, String> parameters = new HashMap<>();
+        String strResponse = this.get( "just_listen", parameters );
+        return strResponse;
+    }
 
     public String fetchPodcastLanguages( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
@@ -122,30 +186,59 @@ public final class Client
         return con;
     }
 
-    private String get( String strPath, Map<String, String> mapParams ) throws Exception
+    private String post( String strPath, Map<String, String> mapParams ) throws Exception
     {
         String strUrl = getUrl( strPath );
 
-        /* Map<String, String> parameters = new HashMap<>(); */
-        /* parameters.put("q", "val"); */
         String strParameters = getParamsString( mapParams );
+        strUrl = strUrl;
 
+        HttpURLConnection con = getConnection( strUrl );
+        con.setRequestMethod( "POST" );
+        con.setRequestProperty( "Content-Type", "application/x-www-form-urlencoded" );
+
+        DataOutputStream out = new DataOutputStream( con.getOutputStream() );
+        out.writeBytes( strParameters );
+        out.flush();
+        out.close();
+
+        StringBuffer content = getResponse();
+
+        return content.toString();
+    }
+
+    private String get( String strPath, Map<String, String> mapParams ) throws Exception
+    {
+        String strUrl = getUrl( strPath );
+        String strParameters = getParamsString( mapParams );
         strUrl = strUrl + "?" + strParameters;
-        /* System.out.println( "URL: " + strUrl ); */
 
         HttpURLConnection con = getConnection( strUrl );
         con.setRequestMethod( "GET" );
+        StringBuffer content = getResponse();
 
-        /* DataOutputStream out = new DataOutputStream( con.getOutputStream() ); */
-        /* System.out.println( "Params: " + strParameters ); */
-        /* out.writeBytes( strParameters ); */
-        /* out.flush(); */
-        /* out.close(); */
+        return content.toString();
+    }
 
+    private String delete( String strPath, Map<String, String> mapParams ) throws Exception
+    {
+        String strUrl = getUrl( strPath );
+
+        String strParameters = getParamsString( mapParams );
+        strUrl = strUrl + "?" + strParameters;
+
+        HttpURLConnection con = getConnection( strUrl );
+        con.setRequestMethod( "DELETE" );
+
+        StringBuffer content = getResponse();
+
+        return content.toString();
+    }
+
+    private StringBuffer getResponse() throws Exception
+    {
         int status = con.getResponseCode();
         processStatus( status );
-
-        /* System.out.println( "Status: " + status ); */
 
         Reader streamReader = null;
 
@@ -154,7 +247,6 @@ public final class Client
         } else {
             streamReader = new InputStreamReader( con.getInputStream() );
         }
-        /* System.exit( 0 ); */
 
         BufferedReader in = new BufferedReader( streamReader );
         String inputLine;
@@ -163,10 +255,8 @@ public final class Client
                 content.append(inputLine);
         }
         in.close();
-
         con.disconnect();
-
-        return content.toString();
+        return content;
     }
 
     private void processStatus( int intStatus ) throws Exception
