@@ -3,3 +3,14 @@
  */
 
 rootProject.name = 'podcast-api'
+
+include (
+	':podcast-api',
+)
+
+buildCache {
+	local {
+		enabled = true
+		removeUnusedEntriesAfterDays = 7
+	}
+}

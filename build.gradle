@@ -6,13 +6,13 @@ plugins {
     id 'application'
     id 'java'
     id 'maven-publish'
+    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
+    id("org.jetbrains.dokka") version "1.4.32"
 }
 
 repositories {
     mavenLocal()
-    maven {
-        url = uri('https://repo.maven.apache.org/maven2/')
-    }
+    mavenCentral()
 }
 
 dependencies {
@@ -20,9 +20,6 @@ dependencies {
     testImplementation 'junit:junit:3.8.1'  
 }
 
-group = GROUP_ID
-version = VERSION_NAME
-description = POM_DESCRIPTION
 java.sourceCompatibility = JavaVersion.VERSION_1_8
 
 publishing {
@@ -70,3 +67,5 @@ jar {
         archiveVersion = VERSION_NAME
     }
 }
+
+apply from: "${rootDir}/scripts/publish-root.gradle"
