@@ -15,11 +15,11 @@ If you have any questions, please contact [hello@listennotes.com](hello@listenno
 
 ```sh
 # Run sample app
-gradle run -q
+./gradlew run -q
 
 # Run all unit tests
-gradle test
+./gradlew test
 
 # Run a specific test case
-gradle test --tests ClientTest.testSearch
+./gradlew test --tests ClientTest.testSearch
 ```
