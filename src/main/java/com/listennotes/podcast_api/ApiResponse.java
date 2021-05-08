@@ -1,14 +1,10 @@
 package com.listennotes.podcast_api;
 
-import com.listennotes.podcast_api.exception.*;
-
 import java.net.HttpURLConnection;
 
 import org.json.JSONObject;
 
-
-public final class ApiResponse
-{
+public final class ApiResponse {
     private HttpURLConnection conn = null;
     private String jsonString = "";
     private JSONObject jsonObj = null;
@@ -35,9 +31,9 @@ public final class ApiResponse
 
     public Integer getUsage() {
         return Integer.parseInt(this.conn.getHeaderField("x-listenapi-usage"));
-    }    
+    }
 
     public String getNextBillingDate() {
         return this.conn.getHeaderField("x-listenapi-nextbillingdate");
-    }        
+    }
 }

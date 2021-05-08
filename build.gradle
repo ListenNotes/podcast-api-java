@@ -33,11 +33,11 @@ publishing {
     }
 }
 
-/**
-    Java Compiler
-**/
+// ==================
+//    Java Compiler
+// ==================
 tasks.withType(JavaCompile) {
-    // options.compilerArgs << "-Xlint:all" << "-Xlint:-options" << "-Xlint:-processing"
+    options.compilerArgs << "-Xlint:all" << "-Xlint:-options" << "-Xlint:-processing"
     options.encoding = 'UTF-8'
 }
 
@@ -45,10 +45,9 @@ compileJava {
     options.compilerArgs << "-Werror"
 }
 
-/**
-    Tasks
-**/
-
+// ==================
+//    Tasks
+// ==================
 
 // Run sample app: 
 // $ gradle run -q

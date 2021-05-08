@@ -1,20 +1,11 @@
 package com.listennotes.podcast_api;
 
 import com.listennotes.podcast_api.exception.*;
-import java.io.*;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.List;
 import java.util.HashMap;
-import java.net.ProtocolException;
-import java.net.MalformedURLException;
 
-import org.json.JSONObject;
-
-public final class Sample
-{
-    public static void main(String args[])
-    {
+public final class Sample {
+    public static void main(String[] args) {
         try {
             Client objClient = new Client();
 
@@ -23,13 +14,13 @@ public final class Sample
 
             parameters = new HashMap<>();
             parameters.put("q", "startup");
-            response = objClient.search( parameters );
+            response = objClient.search(parameters);
             System.out.println(response.toJSON().toString(2));
 
-            System.out.println( "\n=== Some Account Information ===\n" );
-            System.out.println( "Free Quota this month: " + response.getFreeQuota() + " requests" );
-            System.out.println("Usage this month: " + response.getUsage() + " requests" );
-            System.out.println("Next billing date: " + response.getNextBillingDate() );
+            System.out.println("\n=== Some Account Information ===\n");
+            System.out.println("Free Quota this month: " + response.getFreeQuota() + " requests");
+            System.out.println("Usage this month: " + response.getUsage() + " requests");
+            System.out.println("Next billing date: " + response.getNextBillingDate());
 
             // parameters = new HashMap<>();
             // parameters.put("page", "2");
@@ -47,12 +38,14 @@ public final class Sample
             // System.out.println(response.toJSON().toString(2));
 
             // parameters = new HashMap<>();
-            // parameters.put("ids", "c577d55b2b2b483c969fae3ceb58e362,0f34a9099579490993eec9e8c8cebb82");
+            // parameters.put("ids",
+            // "c577d55b2b2b483c969fae3ceb58e362,0f34a9099579490993eec9e8c8cebb82");
             // response = objClient.batchFetchEpisodes( parameters );
             // System.out.println(response.toJSON().toString(2));
 
             // parameters = new HashMap<>();
-            // parameters.put("ids", "3302bc71139541baa46ecb27dbf6071a,68faf62be97149c280ebcc25178aa731");
+            // parameters.put("ids",
+            // "3302bc71139541baa46ecb27dbf6071a,68faf62be97149c280ebcc25178aa731");
             // response = objClient.batchFetchPodcasts( parameters );
             // System.out.println(response.toJSON().toString(2));
 
@@ -72,13 +65,13 @@ public final class Sample
             // System.out.println(response.toJSON().toString(2));
 
             // response = objClient.fetchPodcastRegions();
-            // System.out.println(response.toJSON().toString(2));            
+            // System.out.println(response.toJSON().toString(2));
 
             // response = objClient.fetchPodcastLanguages();
-            // System.out.println(response.toJSON().toString(2));   
+            // System.out.println(response.toJSON().toString(2));
 
             // response = objClient.justListen();
-            // System.out.println(response.toJSON().toString(2));             
+            // System.out.println(response.toJSON().toString(2));
 
             // parameters = new HashMap<>();
             // parameters.put("id", "25212ac3c53240a880dd5032e547047b");
@@ -111,26 +104,20 @@ public final class Sample
             // parameters = new HashMap<>();
             // parameters.put("id", "4d3fe717742d4963a85562e9f84d8c79");
             // parameters.put("reason", "the podcaster wants to delete it");
-            // response = objClient.deletePodcast( parameters );            
+            // response = objClient.deletePodcast( parameters );
             // System.out.println(response.toJSON().toString(2));
-        } catch ( AuthenticationException ae ) {
-            System.out.println( "Authentication Issue: " + ae.getMessage() );
-        } catch ( InvalidRequestException ir ) {
-            System.out.println( "Invalid Request: " + ir.getMessage() );
-        } catch ( RateLimitException ir ) {
-            System.out.println( "Rate Limit: " + ir.getMessage() );
-        } catch ( NotFoundException ir ) {
-            System.out.println( "Not Found: " + ir.getMessage() );
-        } catch ( ListenApiException ir ) {
-            System.out.println( "Exception: " + ir.getMessage() );
-        } catch ( Exception mue ) {
-            System.out.println( "Application Exception: " + mue.getMessage() );
+        } catch (AuthenticationException ae) {
+            System.out.println("Authentication Issue: " + ae.getMessage());
+        } catch (InvalidRequestException ir) {
+            System.out.println("Invalid Request: " + ir.getMessage());
+        } catch (RateLimitException ir) {
+            System.out.println("Rate Limit: " + ir.getMessage());
+        } catch (NotFoundException ir) {
+            System.out.println("Not Found: " + ir.getMessage());
+        } catch (ListenApiException ir) {
+            System.out.println("Exception: " + ir.getMessage());
+        } catch (Exception mue) {
+            System.out.println("Application Exception: " + mue.getMessage());
         }
-    }
-
-    public static void printJson( String strResponse )
-    {
-        JSONObject jo = new JSONObject( strResponse );
-        System.out.println( jo.toString( 2 ) );
     }
 }

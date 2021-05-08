@@ -1,9 +1,9 @@
 package com.listennotes.podcast_api.exception;
 
-public class NotFoundException extends ListenApiException {
+public class ApiConnectionException extends ListenApiException {
     private static final long serialVersionUID = 1234568L;
 
-    public NotFoundException(String errorMessage) {
+    public ApiConnectionException(String errorMessage) {
         super(errorMessage);
     }
 }
