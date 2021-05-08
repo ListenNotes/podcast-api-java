@@ -26,147 +26,130 @@ import java.net.ProtocolException;
 public final class Client
 {
     public static final String BASE_URL_TEST = "https://listen-api-test.listennotes.com/api/v2";
-    public static final String USER_AGENT = "podcast-api-java";
     public static final String BASE_URL_PROD = "https://listen-api.listennotes.com/api/v2";
-    public String API_KEY = "";
-    public static HttpURLConnection con;
-    public Map<String, String> requestParams;
 
-    public String submitPodcast( Map<String, String> mapParams ) throws Exception,ListenApiException
+    public static final String USER_AGENT = "podcast-api-java";
+
+    protected String apiKey = "";
+    protected HttpURLConnection con;
+    protected Map<String, String> requestParams;
+
+    public ApiResponse submitPodcast( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
-        String strResponse = this.post( "podcasts/submit", mapParams );
-        return strResponse;
+        return this.post( "podcasts/submit", mapParams );
     }
 
-    public String deletePodcast( Map<String, String> mapParams ) throws Exception,ListenApiException
-    {
-        String strId = mapParams.get( "id" );
-        mapParams.remove( "id" );
-        String strResponse = this.delete( "podcasts/" + strId, mapParams );
-        return strResponse;
-    }
-
-    public String batchFetchEpisodes( Map<String, String> mapParams ) throws Exception,ListenApiException
-    {
-        String strResponse = this.post( "episodes", mapParams );
-        return strResponse;
-    }
-
-    public String batchFetchPodcasts( Map<String, String> mapParams ) throws Exception,ListenApiException
-    {
-        String strResponse = this.post( "podcasts", mapParams );
-        return strResponse;
-    }
-
-    public String fetchMyPlaylists( Map<String, String> mapParams ) throws Exception,ListenApiException
-    {
-        String strResponse = this.get( "playlists", mapParams );
-        return strResponse;
-    }
-
-    public String fetchPlaylistById( Map<String, String> mapParams ) throws Exception,ListenApiException
+    public ApiResponse deletePodcast( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
         String strId = mapParams.get( "id" );
         mapParams.remove( "id" );
-        String strResponse = this.get( "playlists/" + strId, mapParams );
-        return strResponse;
+        return this.delete( "podcasts/" + strId, mapParams );
     }
 
-    public String fetchRecommendationsForEpisode( Map<String, String> mapParams ) throws Exception,ListenApiException
+    public ApiResponse batchFetchEpisodes( Map<String, String> mapParams ) throws Exception,ListenApiException
+    {
+        return this.post( "episodes", mapParams );
+    }
+
+    public ApiResponse batchFetchPodcasts( Map<String, String> mapParams ) throws Exception,ListenApiException
+    {
+        return this.post( "podcasts", mapParams );
+    }
+
+    public ApiResponse fetchMyPlaylists( Map<String, String> mapParams ) throws Exception,ListenApiException
+    {
+        return this.get( "playlists", mapParams );
+    }
+
+    public ApiResponse fetchPlaylistById( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
         String strId = mapParams.get( "id" );
         mapParams.remove( "id" );
-        String strResponse = this.get( "episodes/" + strId + "/recommendations", mapParams );
-        return strResponse;
+        return this.get( "playlists/" + strId, mapParams );
     }
 
-    public String fetchRecommendationsForPodcast( Map<String, String> mapParams ) throws Exception,ListenApiException
+    public ApiResponse fetchRecommendationsForEpisode( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
         String strId = mapParams.get( "id" );
         mapParams.remove( "id" );
-        String strResponse = this.get( "podcasts/" + strId + "/recommendations", mapParams );
-        return strResponse;
+        return this.get( "episodes/" + strId + "/recommendations", mapParams );
     }
 
-    public String justListen() throws Exception,ListenApiException
+    public ApiResponse fetchRecommendationsForPodcast( Map<String, String> mapParams ) throws Exception,ListenApiException
+    {
+        String strId = mapParams.get( "id" );
+        mapParams.remove( "id" );
+        return this.get( "podcasts/" + strId + "/recommendations", mapParams );
+    }
+
+    public ApiResponse justListen() throws Exception,ListenApiException
     {
         Map<String, String> parameters = new HashMap<>();
-        String strResponse = this.get( "just_listen", parameters );
-        return strResponse;
+        return this.get( "just_listen", parameters );
     }
 
-    public String fetchPodcastLanguages() throws Exception,ListenApiException
+    public ApiResponse fetchPodcastLanguages() throws Exception,ListenApiException
     {
         Map<String, String> parameters = new HashMap<>();
-        String strResponse = this.get( "languages", parameters );
-        return strResponse;
+        return this.get( "languages", parameters );
     }
 
-    public String fetchPodcastRegions() throws Exception,ListenApiException
+    public ApiResponse fetchPodcastRegions() throws Exception,ListenApiException
     {
         Map<String, String> parameters = new HashMap<>();
-        String strResponse = this.get( "regions", parameters );
-        return strResponse;
+        return this.get( "regions", parameters );
     }
 
-    public String fetchPodcastGenres( Map<String, String> mapParams ) throws Exception,ListenApiException
+    public ApiResponse fetchPodcastGenres( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
-        String strResponse = this.get( "genres", mapParams );
-        return strResponse;
+        return this.get( "genres", mapParams );
     }
 
-    public String fetchCuratedPodcastsListById( Map<String, String> mapParams ) throws Exception,ListenApiException
+    public ApiResponse fetchCuratedPodcastsListById( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
         String strId = mapParams.get( "id" );
         mapParams.remove( "id" );
-        String strResponse = this.get( "curated_podcasts/" + strId, mapParams );
-        return strResponse;
+        return this.get( "curated_podcasts/" + strId, mapParams );
     }
 
-    public String fetchCuratedPodcastsLists( Map<String, String> mapParams ) throws Exception,ListenApiException
+    public ApiResponse fetchCuratedPodcastsLists( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
-        String strResponse = this.get( "curated_podcasts", mapParams );
-        return strResponse;
+        return this.get( "curated_podcasts", mapParams );
     }
 
-    public String fetchEpisodeById( Map<String, String> mapParams ) throws Exception,ListenApiException
+    public ApiResponse fetchEpisodeById( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
         String strId = mapParams.get( "id" );
         mapParams.remove( "id" );
-        String strResponse = this.get( "episodes/" + strId, mapParams );
-        return strResponse;
+        return this.get( "episodes/" + strId, mapParams );
     }
 
-    public String fetchPodcastById( Map<String, String> mapParams ) throws Exception,ListenApiException
+    public ApiResponse fetchPodcastById( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
         String strId = mapParams.get( "id" );
         mapParams.remove( "id" );
-        String strResponse = this.get( "podcasts/" + strId, mapParams );
-        return strResponse;
+        return this.get( "podcasts/" + strId, mapParams );
     }
 
-    public String fetchBestPodcasts( Map<String, String> mapParams ) throws Exception,ListenApiException
+    public ApiResponse fetchBestPodcasts( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
-        String strResponse = this.get( "best_podcasts", mapParams );
-        return strResponse;
+        return this.get( "best_podcasts", mapParams );
     }
 
-    public String typeahead( Map<String, String> mapParams ) throws Exception,ListenApiException
+    public ApiResponse typeahead( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
-        String strResponse = this.get( "typeahead", mapParams );
-        return strResponse;
+        return this.get( "typeahead", mapParams );
     }
 
-    public String search( Map<String, String> mapParams ) throws Exception,ListenApiException
+    public ApiResponse search( Map<String, String> mapParams ) throws Exception,ListenApiException
     {
-        String strResponse = this.get( "search", mapParams );
-        return strResponse;
+        return this.get( "search", mapParams );
     }
 
-    public String getUrl( String strPath )
+    protected String getUrl( String strPath )
     {
         String strUrl = BASE_URL_TEST;
-        if ( this.API_KEY.length() > 0 ) {
+        if ( this.apiKey.length() > 0 ) {
             strUrl = BASE_URL_PROD;
         }
 
@@ -176,7 +159,7 @@ public final class Client
 
     public void setApiKey( String strKey )
     {
-        this.API_KEY = strKey;
+        this.apiKey = strKey;
     }
 
     public HttpURLConnection getConnection( String strUrl ) throws Exception
@@ -186,8 +169,8 @@ public final class Client
 
         con.setDoOutput( true );
         con.setRequestProperty( "User-Agent", USER_AGENT );
-        if ( this.API_KEY.length() > 0 ) {
-            con.setRequestProperty( "X-ListenAPI-Key", this.API_KEY );
+        if ( this.apiKey.length() > 0 ) {
+            con.setRequestProperty( "X-ListenAPI-Key", this.apiKey );
         }
         con.setConnectTimeout( 5000 );
         con.setReadTimeout( 5000 );
@@ -195,7 +178,7 @@ public final class Client
         return con;
     }
 
-    private String post( String strPath, Map<String, String> mapParams ) throws Exception
+    private ApiResponse post( String strPath, Map<String, String> mapParams ) throws Exception
     {
         String strUrl = getUrl( strPath );
 
@@ -212,12 +195,10 @@ public final class Client
         out.flush();
         out.close();
 
-        StringBuffer content = getResponse();
-
-        return content.toString();
+        return getResponse();
     }
 
-    private String get( String strPath, Map<String, String> mapParams ) throws Exception
+    private ApiResponse get( String strPath, Map<String, String> mapParams ) throws Exception
     {
         String strUrl = getUrl( strPath );
         String strParameters = getParamsString( mapParams );
@@ -225,12 +206,10 @@ public final class Client
 
         HttpURLConnection con = getConnection( strUrl );
         con.setRequestMethod( "GET" );
-        StringBuffer content = getResponse();
-
-        return content.toString();
+        return getResponse();
     }
 
-    private String delete( String strPath, Map<String, String> mapParams ) throws Exception
+    private ApiResponse delete( String strPath, Map<String, String> mapParams ) throws Exception
     {
         String strUrl = getUrl( strPath );
 
@@ -240,12 +219,10 @@ public final class Client
         HttpURLConnection con = getConnection( strUrl );
         con.setRequestMethod( "DELETE" );
 
-        StringBuffer content = getResponse();
-
-        return content.toString();
+        return getResponse();
     }
 
-    private StringBuffer getResponse() throws Exception
+    private ApiResponse getResponse() throws Exception
     {
         int status = con.getResponseCode();
         processStatus( status );
@@ -266,7 +243,8 @@ public final class Client
         }
         in.close();
         con.disconnect();
-        return content;
+
+        return new ApiResponse(content.toString(), con);
     }
 
     private void processStatus( int intStatus ) throws Exception

@@ -18,39 +18,24 @@ import org.json.JSONArray;
 
 public final class ClientTest extends TestCase
 {
-    public ClientTest( String testName )
-    {
-        super( testName );
-    }
-
-    public static Test suite()
-    {
-        return new TestSuite( ClientTest.class );
-    }
-
-    public void testClient()
-    {
-        assertTrue( true );
-    }
-
     public void testSetApiKey() throws Exception
     {
-        Client tester = new Client();
-        HttpURLConnection con = tester.getConnection( tester.getUrl( "test" ) );
+        Client client = new Client();
+        HttpURLConnection con = client.getConnection( client.getUrl( "test" ) );
         assertEquals( null, con.getRequestProperty( "X-ListenAPI-Key" ) );
 
         String strApiKey = "helloWorld";
-        tester.setApiKey( strApiKey );
-        con = tester.getConnection( tester.getUrl( "test" ) );
+        client.setApiKey( strApiKey );
+        con = client.getConnection( client.getUrl( "test" ) );
         assertEquals( con.getRequestProperty( "X-ListenAPI-Key" ), strApiKey );
 
         Map<String, String> parameters = new HashMap<>();
         parameters.put("q", "test");
 
         try {
-            String strResult = tester.search( parameters );
+            ApiResponse strResult = client.search( parameters );
         } catch ( AuthenticationException e ) {
-            assertEquals( 401, tester.con.getResponseCode() );
+            assertEquals( 401, client.con.getResponseCode() );
         } catch ( Exception e ) {
             assertTrue( false );
         }
@@ -63,11 +48,11 @@ public final class ClientTest extends TestCase
         Map<String, String> parameters = new HashMap<>();
         parameters.put( "q", "test" );
         parameters.put( "sort_by_date", "1" );
-        String strResponse = tester.search( parameters );
+        ApiResponse response = tester.search( parameters );
         assertEquals( 200, tester.con.getResponseCode() );
         assertEquals( tester.USER_AGENT, tester.con.getRequestProperty( "User-Agent" ) );
 
-        JSONObject oj = new JSONObject( strResponse );
+        JSONObject oj = response.toJSON();
         assertTrue( oj.optJSONArray( "results" ) instanceof JSONArray );
         assertTrue( oj.optJSONArray( "results" ).length() > 0 );
 
@@ -79,7 +64,6 @@ public final class ClientTest extends TestCase
         Map<String, String> params = tester.splitQuery( u );
         assertEquals( params.get( "sort_by_date" ), parameters.get( "sort_by_date" ) );
         assertEquals( params.get( "q" ), parameters.get( "q" ) );
-        /* System.out.println( "URL: " + tester.con.getURL( ).toString() ); */
     }
 
     public void testTypeahead() throws Exception
@@ -89,8 +73,8 @@ public final class ClientTest extends TestCase
         Map<String, String> parameters = new HashMap<>();
         parameters.put("q", "test");
         parameters.put("show_podcasts", "1");
-        String strResponse = tester.typeahead( parameters );
-        JSONObject oj = new JSONObject( strResponse );
+        ApiResponse response = tester.typeahead( parameters );
+        JSONObject oj = response.toJSON();
         assertTrue( oj.optJSONArray( "terms" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "GET" );
         URL u = tester.con.getURL();
@@ -106,8 +90,8 @@ public final class ClientTest extends TestCase
 
         Map<String, String> parameters = new HashMap<>();
         parameters.put("genre_id", "23");
-        String strResponse = tester.fetchBestPodcasts( parameters );
-        JSONObject oj = new JSONObject( strResponse );
+        ApiResponse response = tester.fetchBestPodcasts( parameters );
+        JSONObject oj = response.toJSON();
         assertTrue( oj.optInt( "total", 0 ) > 0 );
         assertEquals( tester.con.getRequestMethod(), "GET" );
         URL u = tester.con.getURL();
@@ -123,8 +107,8 @@ public final class ClientTest extends TestCase
         Map<String, String> parameters = new HashMap<>();
         String id = "23";
         parameters.put("id", id );
-        String strResponse = tester.fetchPodcastById( parameters );
-        JSONObject oj = new JSONObject( strResponse );
+        ApiResponse response = tester.fetchPodcastById( parameters );
+        JSONObject oj = response.toJSON();
         assertTrue( oj.optJSONArray( "episodes" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "GET" );
         URL u = tester.con.getURL();
@@ -138,9 +122,8 @@ public final class ClientTest extends TestCase
         Map<String, String> parameters = new HashMap<>();
         String id = "23";
         parameters.put("id", id );
-        String strResponse = tester.fetchEpisodeById( parameters );
-        JSONObject oj = new JSONObject( strResponse );
-        /* JSONObject podcast new JSONObject( oj */
+        ApiResponse response = tester.fetchEpisodeById( parameters );
+        JSONObject oj = response.toJSON();
         assertTrue( oj.optJSONObject( "podcast" ).optString("rss").length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "GET" );
         URL u = tester.con.getURL();
@@ -154,8 +137,8 @@ public final class ClientTest extends TestCase
         Map<String, String> parameters = new HashMap<>();
         String id = "23";
         parameters.put("id", id );
-        String strResponse = tester.fetchCuratedPodcastsListById( parameters );
-        JSONObject oj = new JSONObject( strResponse );
+        ApiResponse response = tester.fetchCuratedPodcastsListById( parameters );
+        JSONObject oj = response.toJSON();
         assertTrue( oj.optJSONArray( "podcasts" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "GET" );
         URL u = tester.con.getURL();
@@ -168,8 +151,8 @@ public final class ClientTest extends TestCase
 
         Map<String, String> parameters = new HashMap<>();
         parameters.put("page", "2");
-        String strResponse = tester.fetchCuratedPodcastsLists( parameters );
-        JSONObject oj = new JSONObject( strResponse );
+        ApiResponse response = tester.fetchCuratedPodcastsLists( parameters );
+        JSONObject oj = response.toJSON();
         assertTrue( oj.optInt( "total", 0 ) > 0 );
         assertEquals( tester.con.getRequestMethod(), "GET" );
         URL u = tester.con.getURL();
@@ -184,8 +167,8 @@ public final class ClientTest extends TestCase
 
         Map<String, String> parameters = new HashMap<>();
         parameters.put("top_level_only", "1");
-        String strResponse = tester.fetchPodcastGenres( parameters );
-        JSONObject oj = new JSONObject( strResponse );
+        ApiResponse response = tester.fetchPodcastGenres( parameters );
+        JSONObject oj = response.toJSON();
         assertTrue( oj.optJSONArray( "genres" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "GET" );
         URL u = tester.con.getURL();
@@ -197,8 +180,8 @@ public final class ClientTest extends TestCase
     public void testFetchPodcastRegions() throws Exception
     {
         Client tester = new Client();
-        String strResponse = tester.fetchPodcastRegions();
-        JSONObject oj = new JSONObject( strResponse );
+        ApiResponse response = tester.fetchPodcastRegions();
+        JSONObject oj = response.toJSON();
         assertTrue( oj.optJSONObject( "regions" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "GET" );
         URL u = tester.con.getURL();
@@ -208,8 +191,8 @@ public final class ClientTest extends TestCase
     public void testFetchPodcastLanguages() throws Exception
     {
         Client tester = new Client();
-        String strResponse = tester.fetchPodcastLanguages();
-        JSONObject oj = new JSONObject( strResponse );
+        ApiResponse response = tester.fetchPodcastLanguages();
+        JSONObject oj = response.toJSON();
         assertTrue( oj.optJSONArray( "languages" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "GET" );
         URL u = tester.con.getURL();
@@ -220,8 +203,8 @@ public final class ClientTest extends TestCase
     {
         Client tester = new Client();
 
-        String strResponse = tester.justListen();
-        JSONObject oj = new JSONObject( strResponse );
+        ApiResponse response = tester.justListen();
+        JSONObject oj = response.toJSON();
         /* System.out.println( "DBG: " + oj.toString() ); */
         assertTrue( oj.optInt( "audio_length_sec", 0 ) > 0 );
         assertEquals( tester.con.getRequestMethod(), "GET" );
@@ -236,8 +219,8 @@ public final class ClientTest extends TestCase
         Map<String, String> parameters = new HashMap<>();
         String id = "23";
         parameters.put("id", id );
-        String strResponse = tester.fetchRecommendationsForPodcast( parameters );
-        JSONObject oj = new JSONObject( strResponse );
+        ApiResponse response = tester.fetchRecommendationsForPodcast( parameters );
+        JSONObject oj = response.toJSON();
         assertTrue( oj.optJSONArray( "recommendations" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "GET" );
         URL u = tester.con.getURL();
@@ -251,8 +234,8 @@ public final class ClientTest extends TestCase
         Map<String, String> parameters = new HashMap<>();
         String id = "23";
         parameters.put("id", id );
-        String strResponse = tester.fetchRecommendationsForEpisode( parameters );
-        JSONObject oj = new JSONObject( strResponse );
+        ApiResponse response = tester.fetchRecommendationsForEpisode( parameters );
+        JSONObject oj = response.toJSON();
         assertTrue( oj.optJSONArray( "recommendations" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "GET" );
         URL u = tester.con.getURL();
@@ -266,8 +249,8 @@ public final class ClientTest extends TestCase
         Map<String, String> parameters = new HashMap<>();
         String id = "23";
         parameters.put("id", id );
-        String strResponse = tester.fetchPlaylistById( parameters );
-        JSONObject oj = new JSONObject( strResponse );
+        ApiResponse response = tester.fetchPlaylistById( parameters );
+        JSONObject oj = response.toJSON();
         assertTrue( oj.optJSONArray( "items" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "GET" );
         URL u = tester.con.getURL();
@@ -280,8 +263,8 @@ public final class ClientTest extends TestCase
 
         Map<String, String> parameters = new HashMap<>();
         parameters.put("page", "2" );
-        String strResponse = tester.fetchMyPlaylists( parameters );
-        JSONObject oj = new JSONObject( strResponse );
+        ApiResponse response = tester.fetchMyPlaylists( parameters );
+        JSONObject oj = response.toJSON();
         assertTrue( oj.optJSONArray( "playlists" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "GET" );
         URL u = tester.con.getURL();
@@ -296,8 +279,8 @@ public final class ClientTest extends TestCase
 
         Map<String, String> parameters = new HashMap<>();
         parameters.put( "ids", "2,222,333,4444" );
-        String strResponse = tester.batchFetchPodcasts( parameters );
-        JSONObject oj = new JSONObject( strResponse );
+        ApiResponse response = tester.batchFetchPodcasts( parameters );
+        JSONObject oj = response.toJSON();
         assertTrue( oj.optJSONArray( "podcasts" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "POST" );
         assertEquals( parameters.get( "ids" ), tester.requestParams.get( "ids" ) );
@@ -311,8 +294,8 @@ public final class ClientTest extends TestCase
 
         Map<String, String> parameters = new HashMap<>();
         parameters.put( "ids", "2,222,333,4444" );
-        String strResponse = tester.batchFetchEpisodes( parameters );
-        JSONObject oj = new JSONObject( strResponse );
+        ApiResponse response = tester.batchFetchEpisodes( parameters );
+        JSONObject oj = response.toJSON();
         assertTrue( oj.optJSONArray( "episodes" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "POST" );
         assertEquals( parameters.get( "ids" ), tester.requestParams.get( "ids" ) );
@@ -328,8 +311,8 @@ public final class ClientTest extends TestCase
         String id = "23";
         parameters.put("id", id );
         parameters.put("reason", "User wants to delete podcast" );
-        String strResponse = tester.deletePodcast( parameters );
-        JSONObject oj = new JSONObject( strResponse );
+        ApiResponse response = tester.deletePodcast( parameters );
+        JSONObject oj = response.toJSON();
         assertTrue( oj.optString( "status" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "DELETE" );
 
@@ -346,8 +329,8 @@ public final class ClientTest extends TestCase
 
         Map<String, String> parameters = new HashMap<>();
         parameters.put("rss", "http://myrss.com/rss" );
-        String strResponse = tester.submitPodcast( parameters );
-        JSONObject oj = new JSONObject( strResponse );
+        ApiResponse response = tester.submitPodcast( parameters );
+        JSONObject oj = response.toJSON();
         assertTrue( oj.optString( "status" ).length() > 0 );
         assertEquals( tester.con.getRequestMethod(), "POST" );
         assertEquals( parameters.get( "rss" ), tester.requestParams.get( "rss" ) );
