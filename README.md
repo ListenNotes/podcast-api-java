@@ -1,14 +1,17 @@
 # listen-api-java
-In order to run the code you must install Maven.
 
-From the command line run the package command to create the jar file:
 
-$ mvn package
+## Development
 
-Then use java to execute sample code for instance:
+Gradle tasks
+```sh
+# Run sample app
+gradle run -q
 
-$ java -cp ./target/podcast-api-1.0-SNAPSHOT.jar com.listennotes.podcast_api.Sample
+# Run all unit tests
+gradle test
 
-To run tests use the test command:
+# Run a specific test case
+gradle test --tests ClientTest.testSearch
+```
 
-$ mvn test

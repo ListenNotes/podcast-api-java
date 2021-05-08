@@ -23,7 +23,7 @@ public final class Sample
             parameters.put("q", "val");
 
             strResponse = objClient.search( parameters );
-            /* printJson( strResponse ); */
+            printJson( strResponse );
 
             /* System.out.println( "RESPONSE LENGTH: " + strResponse.length() ); */
             System.out.println( "\n=== Some Account Information ===" );
