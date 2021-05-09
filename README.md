@@ -95,7 +95,7 @@ public class PodcastApiExample {
 
           ApiResponse response = objClient.search(parameters);
 
-          // For successful response, you get a org.json.JSONObject
+          // For successful response, you get an org.json.JSONObject
           System.out.println(response.toJSON().toString(2));
 
           // Some handy methods to get your account stats
@@ -110,7 +110,7 @@ public class PodcastApiExample {
 }
 ```
 
-If `apiKey` is None, then we'll connect to a [mock server](https://www.listennotes.com/api/tutorials/#faq0) that returns fake data for testing purposes.
+If `apiKey` is null or "", then we'll connect to a [mock server](https://www.listennotes.com/api/tutorials/#faq0) that returns fake data for testing purposes.
 
 You can quickly run sample code using gradle:
 ```shell
