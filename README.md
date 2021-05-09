@@ -1,4 +1,4 @@
-# Podcast API Go Library
+# Podcast API Java Library
 
 [![Build Status](https://travis-ci.com/ListenNotes/podcast-api-java.svg?branch=main)](https://travis-ci.com/ListenNotes/podcast-api-java)
 
