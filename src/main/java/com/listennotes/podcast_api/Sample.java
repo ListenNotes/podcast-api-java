@@ -1,15 +1,15 @@
 package com.listennotes.podcast_api;
 
 import com.listennotes.podcast_api.exception.*;
-import java.util.Map;
 import java.util.HashMap;
 
 public final class Sample {
     public static void main(String[] args) {
         try {
-            Client objClient = new Client();
+            String apiKey = System.getenv("LISTEN_API_KEY");
+            Client objClient = new Client(apiKey);
 
-            Map<String, String> parameters;
+            HashMap<String, String> parameters;
             ApiResponse response;
 
             parameters = new HashMap<>();

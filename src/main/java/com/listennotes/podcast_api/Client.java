@@ -19,6 +19,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 
+
 public final class Client {
     public static final String BASE_URL_TEST = "https://listen-api-test.listennotes.com/api/v2";
     public static final String BASE_URL_PROD = "https://listen-api.listennotes.com/api/v2";
@@ -28,6 +29,14 @@ public final class Client {
     protected String apiKey = "";
     protected HttpURLConnection con;
     protected Map<String, String> requestParams;
+
+    public Client(String apiKey) {
+        this.apiKey = apiKey;
+    }
+
+    public Client() {
+        // No api key. Use api mock server.
+    }
 
     public ApiResponse submitPodcast(Map<String, String> mapParams) throws ListenApiException {
         return this.post("podcasts/submit", mapParams);
@@ -124,16 +133,12 @@ public final class Client {
 
     protected String getUrl(String strPath) {
         String strUrl = BASE_URL_TEST;
-        if (this.apiKey.length() > 0) {
+        if (this.apiKey != null &&this.apiKey.length() > 0) {
             strUrl = BASE_URL_PROD;
         }
 
         strUrl = strUrl + "/" + strPath;
         return strUrl;
-    }
-
-    public void setApiKey(String strKey) {
-        this.apiKey = strKey;
     }
 
     public HttpURLConnection getConnection(String strUrl) throws ListenApiException {
@@ -151,7 +156,7 @@ public final class Client {
 
         con.setDoOutput(true);
         con.setRequestProperty("User-Agent", USER_AGENT);
-        if (this.apiKey.length() > 0) {
+        if (this.apiKey != null && this.apiKey.length() > 0) {
             con.setRequestProperty("X-ListenAPI-Key", this.apiKey);
         }
         con.setConnectTimeout(5000);

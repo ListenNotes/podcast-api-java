@@ -19,7 +19,7 @@ public final class ClientTest extends TestCase {
         assertEquals(null, con.getRequestProperty("X-ListenAPI-Key"));
 
         String strApiKey = "helloWorld";
-        client.setApiKey(strApiKey);
+        client = new Client(strApiKey);
         con = client.getConnection(client.getUrl("test"));
         assertEquals(con.getRequestProperty("X-ListenAPI-Key"), strApiKey);
 
