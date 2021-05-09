@@ -60,17 +60,17 @@ group = GROUP_ID
 version = VERSION_NAME
 description = POM_DESCRIPTION
 
-afterEvaluate {
-    publishing {
-        publications {
-            release(MavenPublication) {
+publishing {
+    publications {
+        release(MavenPublication) {
+            from(components.java)
                 // The coordinates of the library, being set from variables that
                 // we'll set up later
                 groupId GROUP_ID
                 artifactId POM_ARTIFACT_ID
                 version VERSION_NAME
 
-                artifact("$buildDir/libs/${project.getName()}-${version}.jar")
+                // artifact("$buildDir/libs/${project.getName()}-${version}.jar")
 
                 artifact sourcesJar
                 artifact javadocJar
@@ -94,16 +94,17 @@ afterEvaluate {
                         }
                     }
 
-                // Version control info - if you're using GitHub, follow the 
-                // format as seen here
-                scm {
+                    // Version control info - if you're using GitHub, follow the 
+                    // format as seen here
+                    scm {
                         connection = POM_SCM_CONNECTION
                         developerConnection = POM_SCM_DEV_CONNECTION
                         url = POM_URL
                     }
-                }
-            }
-        }
+
+                    
+                }            
+        }      
     }
 }
 

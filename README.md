@@ -11,6 +11,32 @@ If you have any questions, please contact [hello@listennotes.com](hello@listenno
 
 <a href="https://www.listennotes.com/api/"><img src="https://raw.githubusercontent.com/ListenNotes/ListenApiDemo/master/web/src/powered_by_listennotes.png" width="300" /></a>
 
+## Installation
+
+### Requirements
+
+- Java 1.8 or later
+
+### Gradle users
+
+Add this dependency to your project's build file:
+
+```groovy
+implementation "com.listennotes:podcast-api:1.0.4"
+```
+
+### Maven users
+
+Add this dependency to your project's POM:
+
+```xml
+<dependency>
+  <groupId>com.listennotes</groupId>
+  <artifactId>podcast-api</artifactId>
+  <version>1.0.4</version>
+</dependency>
+```
+
 ## Development
 
 ```sh

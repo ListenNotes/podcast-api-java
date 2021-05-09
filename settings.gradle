@@ -8,9 +8,9 @@ include (
 	':podcast-api',
 )
 
-buildCache {
-	local {
-		enabled = true
-		removeUnusedEntriesAfterDays = 7
-	}
-}
+// buildCache {
+// 	local {
+// 		enabled = true
+// 		removeUnusedEntriesAfterDays = 7
+// 	}
+// }
