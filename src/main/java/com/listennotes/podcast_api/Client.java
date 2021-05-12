@@ -27,15 +27,25 @@ public final class Client {
     public static final String USER_AGENT = "podcast-api-java";
 
     protected String apiKey = "";
+    protected Integer timeoutMs = 30000; // 30 seconds
+    protected String userAgent = USER_AGENT;
     protected HttpURLConnection con;
     protected Map<String, String> requestParams;
+
+    public Client() {
+        // No api key. Use api mock server.
+    }
 
     public Client(String apiKey) {
         this.apiKey = apiKey;
     }
 
-    public Client() {
-        // No api key. Use api mock server.
+    public void setResponseTimeoutMs(Integer timeoutMs) {
+        this.timeoutMs = timeoutMs;
+    }
+
+    public void setUserAgent(String userAgent) {
+        this.userAgent = userAgent;
     }
 
     public ApiResponse submitPodcast(Map<String, String> mapParams) throws ListenApiException {
@@ -155,12 +165,12 @@ public final class Client {
         }
 
         con.setDoOutput(true);
-        con.setRequestProperty("User-Agent", USER_AGENT);
+        con.setRequestProperty("User-Agent", this.userAgent);
         if (this.apiKey != null && this.apiKey.length() > 0) {
             con.setRequestProperty("X-ListenAPI-Key", this.apiKey);
         }
         con.setConnectTimeout(5000);
-        con.setReadTimeout(5000);
+        con.setReadTimeout(this.timeoutMs);
         con.setInstanceFollowRedirects(false);
         return con;
     }

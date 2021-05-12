@@ -54,7 +54,7 @@ You can install this library for JVM-based languages, including Java, Kotlin, Cl
 Add this dependency to your project's build file:
 
 ```groovy
-implementation "com.listennotes:podcast-api:1.0.5"
+implementation "com.listennotes:podcast-api:1.0.6"
 ```
 
 ### Maven users
@@ -65,7 +65,7 @@ Add this dependency to your project's POM:
 <dependency>
   <groupId>com.listennotes</groupId>
   <artifactId>podcast-api</artifactId>
-  <version>1.0.5</version>
+  <version>1.0.6</version>
 </dependency>
 ```
 
@@ -88,6 +88,12 @@ public class PodcastApiExample {
           // If apiKey is null or "", then we'll use mock api for test data
           String apiKey = System.getenv("LISTEN_API_KEY");
           Client objClient = new Client(apiKey);
+
+          // Set timeout for 15 seconds
+          objClient.setResponseTimeoutMs(15000);
+
+          // Customize your user agent
+          objClient.setUserAgent("My Great Podcast App");
 
           // All parameters can be found at
           //    https://www.listennotes.com/api/docs/

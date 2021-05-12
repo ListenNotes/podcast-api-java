@@ -8,6 +8,8 @@ public final class Sample {
         try {
             String apiKey = System.getenv("LISTEN_API_KEY");
             Client objClient = new Client(apiKey);
+            objClient.setResponseTimeoutMs(15000);
+            objClient.setUserAgent("My Great Podcast App");
 
             HashMap<String, String> parameters;
             ApiResponse response;
