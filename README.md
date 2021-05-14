@@ -2651,7 +2651,7 @@ public class PodcastApiExample {
       HashMap<String, String> parameters = new HashMap<>();
       
       parameters.put("page", "2");
-      parameters.put("region_id", "93");
+      parameters.put("genre_id", "93");
       ApiResponse response = objClient.fetchBestPodcasts(parameters);            
 
 
