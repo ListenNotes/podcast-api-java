@@ -57,7 +57,7 @@ You can install this library for JVM-based languages, including Java, Kotlin, Cl
 Add this dependency to your project's build file:
 
 ```groovy
-implementation "com.listennotes:podcast-api:1.0.6"
+implementation "com.listennotes:podcast-api:1.1.0"
 ```
 
 ### Maven users
@@ -68,7 +68,7 @@ Add this dependency to your project's POM:
 <dependency>
   <groupId>com.listennotes</groupId>
   <artifactId>podcast-api</artifactId>
-  <version>1.0.6</version>
+  <version>1.1.0</version>
 </dependency>
 ```
 
