@@ -1,6 +1,6 @@
 # Podcast API Java Library
 
-[![Build Status](https://travis-ci.com/ListenNotes/podcast-api-java.svg?branch=main)](https://travis-ci.com/ListenNotes/podcast-api-java)
+[![Java CI](https://github.com/ListenNotes/podcast-api-java/actions/workflows/gradle.yml/badge.svg)](https://github.com/ListenNotes/podcast-api-java/actions/workflows/gradle.yml)
 
 The Podcast API Java library provides convenient access to the [Listen Notes Podcast API](https://www.listennotes.com/api/) from
 applications written in JVM-based languages, including Java, Kotlin, Clojure, Scala, Groovy...
