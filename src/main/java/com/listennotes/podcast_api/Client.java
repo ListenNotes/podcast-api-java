@@ -137,6 +137,18 @@ public final class Client {
         return this.get("typeahead", mapParams);
     }
 
+    public ApiResponse spellcheck(Map<String, String> mapParams) throws ListenApiException {
+        return this.get("spellcheck", mapParams);
+    }    
+
+    public ApiResponse fetchRelatedSearches(Map<String, String> mapParams) throws ListenApiException {
+        return this.get("related_searches", mapParams);
+    }     
+    
+    public ApiResponse fetchTrendingSearches(Map<String, String> mapParams) throws ListenApiException {
+        return this.get("trending_searches", mapParams);
+    }          
+
     public ApiResponse search(Map<String, String> mapParams) throws ListenApiException {
         return this.get("search", mapParams);
     }

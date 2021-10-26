@@ -76,6 +76,48 @@ public final class ClientTest extends TestCase {
         assertEquals(params.get("q"), parameters.get("q"));
     }
 
+    public void testSpellcheck() throws Exception {
+        Client tester = new Client();
+
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("q", "test");
+        ApiResponse response = tester.spellcheck(parameters);
+        JSONObject oj = response.toJSON();
+        assertTrue(oj.optJSONArray("tokens").length() > 0);
+        assertEquals(tester.con.getRequestMethod(), "GET");
+        URL u = tester.con.getURL();
+        assertEquals(u.getPath(), "/api/v2/spellcheck");
+        Map<String, String> params = Client.splitQuery(u);
+        assertEquals(params.get("q"), parameters.get("q"));
+    }    
+
+    public void testRelatedSearches() throws Exception {
+        Client tester = new Client();
+
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("q", "test");
+        ApiResponse response = tester.fetchRelatedSearches(parameters);
+        JSONObject oj = response.toJSON();
+        assertTrue(oj.optJSONArray("terms").length() > 0);
+        assertEquals(tester.con.getRequestMethod(), "GET");
+        URL u = tester.con.getURL();
+        assertEquals(u.getPath(), "/api/v2/related_searches");
+        Map<String, String> params = Client.splitQuery(u);
+        assertEquals(params.get("q"), parameters.get("q"));
+    }    
+
+    public void testTrendingSearches() throws Exception {
+        Client tester = new Client();
+
+        Map<String, String> parameters = new HashMap<>();
+        ApiResponse response = tester.fetchTrendingSearches(parameters);
+        JSONObject oj = response.toJSON();
+        assertTrue(oj.optJSONArray("terms").length() > 0);
+        assertEquals(tester.con.getRequestMethod(), "GET");
+        URL u = tester.con.getURL();
+        assertEquals(u.getPath(), "/api/v2/trending_searches");
+    }        
+
     public void testFetchBestPodcasts() throws Exception {
         Client tester = new Client();
 

@@ -25,6 +25,20 @@ public final class Sample {
             System.out.println("Next billing date: " + response.getNextBillingDate());
 
             // parameters = new HashMap<>();
+            // parameters.put("q", "evergrand stok");
+            // response = objClient.spellcheck( parameters );
+            // System.out.println(response.toJSON().toString(2));
+
+            // parameters = new HashMap<>();
+            // parameters.put("q", "evergrande");
+            // response = objClient.fetchRelatedSearches( parameters );
+            // System.out.println(response.toJSON().toString(2));
+
+            // parameters = new HashMap<>();
+            // response = objClient.fetchTrendingSearches( parameters );
+            // System.out.println(response.toJSON().toString(2));
+
+            // parameters = new HashMap<>();
             // parameters.put("page", "2");
             // response = objClient.fetchBestPodcasts( parameters );
             // System.out.println(response.toJSON().toString(2));
