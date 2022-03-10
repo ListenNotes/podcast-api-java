@@ -284,7 +284,7 @@ public final class Client {
         if (intStatus == 401) {
             throw new AuthenticationException("Wrong api key or your account is suspended");
         } else if (intStatus == 429) {
-            throw new RateLimitException("You use FREE plan and you exceed the quota limit");
+            throw new RateLimitException("For FREE plan, exceeding the quota limit; or for all plans, sending too many requests too fast and exceeding the rate limit - https://www.listennotes.com/api/faq/#faq17");
         } else if (intStatus == 404) {
             throw new NotFoundException("Endpoint not exist, or podcast / episode not exist");
         } else if (intStatus == 400) {
