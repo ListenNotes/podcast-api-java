@@ -122,6 +122,11 @@ public final class Sample {
             // parameters.put("reason", "the podcaster wants to delete it");
             // response = objClient.deletePodcast( parameters );
             // System.out.println(response.toJSON().toString(2));
+
+            // parameters = new HashMap<>();
+            // parameters.put("id", "25212ac3c53240a880dd5032e547047b");
+            // response = objClient.fetchRecommendationsForPodcast( parameters );
+            // System.out.println(response.toJSON().toString(2));            
         } catch (AuthenticationException ae) {
             System.out.println("Authentication Issue: " + ae.getMessage());
         } catch (InvalidRequestException ir) {

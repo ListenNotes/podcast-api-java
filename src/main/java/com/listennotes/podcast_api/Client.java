@@ -153,6 +153,12 @@ public final class Client {
         return this.get("search", mapParams);
     }
 
+    public ApiResponse fetchAudienceForPodcast(Map<String, String> mapParams) throws ListenApiException {
+        String strId = mapParams.get("id");
+        mapParams.remove("id");
+        return this.get("podcasts/" + strId + "/audience", mapParams);
+    }
+
     protected String getUrl(String strPath) {
         String strUrl = BASE_URL_TEST;
         if (this.apiKey != null &&this.apiKey.length() > 0) {

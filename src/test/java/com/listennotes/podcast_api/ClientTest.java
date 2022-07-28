@@ -354,4 +354,18 @@ public final class ClientTest extends TestCase {
         URL u = tester.con.getURL();
         assertEquals(u.getPath(), "/api/v2/podcasts/submit");
     }
+
+    public void testFetchAudienceForPodcast() throws Exception {
+        Client tester = new Client();
+
+        Map<String, String> parameters = new HashMap<>();
+        String id = "23";
+        parameters.put("id", id);
+        ApiResponse response = tester.fetchAudienceForPodcast(parameters);
+        JSONObject oj = response.toJSON();
+        assertTrue(oj.optJSONArray("by_regions").length() > 0);
+        assertEquals(tester.con.getRequestMethod(), "GET");
+        URL u = tester.con.getURL();
+        assertEquals(u.getPath(), "/api/v2/podcasts/" + id + "/audience");
+    }    
 }
