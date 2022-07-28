@@ -79,7 +79,7 @@ publishing {
               pom {
                     name = POM_NAME
                     description = POM_DESCRIPTION
-                    url = 'https://www.listennotes.com/api/'
+                    url = 'https://www.listennotes.com/podcast-api/'
                     licenses {
                         license {
                             name = POM_LICENCE_NAME

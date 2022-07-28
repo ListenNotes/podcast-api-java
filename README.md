@@ -76,7 +76,7 @@ Add this dependency to your project's POM:
 ## Usage
 
 The library needs to be configured with your account's API key which is
-available in your [Listen API Dashboard](https://www.listennotes.com/api/dashboard/#apps). Set `apiKey` to its
+available in your [Listen API Dashboard](https://www.listennotes.com/podcast-api/dashboard/#apps). Set `apiKey` to its
 value:
 
 ```java
@@ -100,7 +100,7 @@ public class PodcastApiExample {
           objClient.setUserAgent("My Great Podcast App");
 
           // All parameters can be found at
-          //    https://www.listennotes.com/api/docs/
+          //    https://www.listennotes.com/podcast-api/docs/
           HashMap<String, String> parameters = new HashMap<>();
           parameters.put("q", "startup");
           parameters.put("type", "podcast");
