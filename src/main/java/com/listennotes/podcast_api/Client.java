@@ -159,6 +159,12 @@ public final class Client {
         return this.get("podcasts/" + strId + "/audience", mapParams);
     }
 
+    public ApiResponse fetchPodcastsByDomain(Map<String, String> mapParams) throws ListenApiException {
+        String strDomainName = mapParams.get("domain_name");
+        mapParams.remove("domain_name");
+        return this.get("podcasts/domains/" + strDomainName, mapParams);
+    }    
+
     protected String getUrl(String strPath) {
         String strUrl = BASE_URL_TEST;
         if (this.apiKey != null &&this.apiKey.length() > 0) {

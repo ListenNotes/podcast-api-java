@@ -367,5 +367,19 @@ public final class ClientTest extends TestCase {
         assertEquals(tester.con.getRequestMethod(), "GET");
         URL u = tester.con.getURL();
         assertEquals(u.getPath(), "/api/v2/podcasts/" + id + "/audience");
+    }
+    
+    public void testFetchPodcastsByDomain() throws Exception {
+        Client tester = new Client();
+
+        Map<String, String> parameters = new HashMap<>();
+        String domainName = "npr.org";
+        parameters.put("domain_name", domainName);
+        ApiResponse response = tester.fetchPodcastsByDomain(parameters);
+        JSONObject oj = response.toJSON();
+        assertTrue(oj.optJSONArray("podcasts").length() > 0);
+        assertEquals(tester.con.getRequestMethod(), "GET");
+        URL u = tester.con.getURL();
+        assertEquals(u.getPath(), "/api/v2/podcasts/domains/" + domainName);
     }    
 }
