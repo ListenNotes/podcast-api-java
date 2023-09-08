@@ -153,6 +153,10 @@ public final class Client {
         return this.get("search", mapParams);
     }
 
+    public ApiResponse searchEpisodeTitles(Map<String, String> mapParams) throws ListenApiException {
+        return this.get("search_episode_titles", mapParams);
+    }
+
     public ApiResponse fetchAudienceForPodcast(Map<String, String> mapParams) throws ListenApiException {
         String strId = mapParams.get("id");
         mapParams.remove("id");

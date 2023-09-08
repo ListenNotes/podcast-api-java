@@ -59,6 +59,30 @@ public final class ClientTest extends TestCase {
         assertEquals(params.get("q"), parameters.get("q"));
     }
 
+    public void testSearchEpisodeTitles() throws Exception {
+        Client tester = new Client();
+
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("q", "test");
+        parameters.put("podcast_id", "123");
+        ApiResponse response = tester.searchEpisodeTitles(parameters);
+        assertEquals(200, tester.con.getResponseCode());
+        assertEquals(Client.USER_AGENT, tester.con.getRequestProperty("User-Agent"));
+
+        JSONObject oj = response.toJSON();
+        assertTrue(oj.optJSONArray("results") instanceof JSONArray);
+        assertTrue(oj.optJSONArray("results").length() > 0);
+
+        assertEquals(tester.con.getRequestMethod(), "GET");
+
+        URL u = tester.con.getURL();
+        assertEquals(u.getPath(), "/api/v2/search_episode_titles");
+
+        Map<String, String> params = Client.splitQuery(u);
+        assertEquals(params.get("podcast_id"), parameters.get("podcast_id"));
+        assertEquals(params.get("q"), parameters.get("q"));
+    }
+
     public void testTypeahead() throws Exception {
         Client tester = new Client();
 
