@@ -18,6 +18,8 @@ import java.net.URLDecoder;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 
 public final class Client {
@@ -182,7 +184,9 @@ public final class Client {
     public HttpURLConnection getConnection(String strUrl) throws ListenApiException {
         URL url;
         try {
-            url = new URL(strUrl);
+            url = new URI(strUrl).toURL();
+        } catch (URISyntaxException e) {
+            throw new InvalidRequestException("URI Syntax error");
         } catch (MalformedURLException e) {
             throw new InvalidRequestException("Malformed Url");
         }
