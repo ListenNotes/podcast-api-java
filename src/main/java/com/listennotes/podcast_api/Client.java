@@ -1,358 +1,176 @@
 package com.listennotes.podcast_api;
 
 import com.listennotes.podcast_api.exception.*;
-
-import java.io.Reader;
-import java.io.UnsupportedEncodingException;
-import java.io.InputStreamReader;
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-
-import java.net.URL;
-import java.net.URLEncoder;
-import java.net.URLDecoder;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
-
-public final class Client {
+/** Synchronous Listen API client. Requests and credentials are isolated per client. */
+public final class Client extends ApiMethods {
     public static final String BASE_URL_TEST = "https://listen-api-test.listennotes.com/api/v2";
     public static final String BASE_URL_PROD = "https://listen-api.listennotes.com/api/v2";
-
     public static final String USER_AGENT = "podcast-api-java";
 
-    protected String apiKey = "";
-    protected Integer timeoutMs = 30000; // 30 seconds
-    protected String userAgent = USER_AGENT;
-    protected HttpURLConnection con;
-    protected Map<String, String> requestParams;
+    private final String apiKey;
+    private final String baseUrl;
+    private final HttpClient httpClient;
+    private volatile int timeoutMs = 30000;
+    private volatile String userAgent = USER_AGENT;
 
-    public Client() {
-        // No api key. Use api mock server.
-    }
+    /** Creates a client for the public mock server, without credentials. */
+    public Client() { this(null); }
 
+    /** A null or blank API key selects the public mock server. */
     public Client(String apiKey) {
-        this.apiKey = apiKey;
+        this(apiKey, apiKey == null || apiKey.isBlank() ? BASE_URL_TEST : BASE_URL_PROD);
     }
 
+    /** Creates a client with an explicit API base URL, useful for local testing. */
+    public Client(String apiKey, String baseUrl) {
+        this.apiKey = apiKey == null || apiKey.isBlank() ? null : headerValue(apiKey);
+        URI uri = URI.create(baseUrl);
+        if (!("https".equals(uri.getScheme()) || "http".equals(uri.getScheme())) || uri.getHost() == null
+                || uri.getRawQuery() != null || uri.getRawFragment() != null || uri.getRawUserInfo() != null) {
+            throw new IllegalArgumentException("Base URL must be an HTTP(S) URL without credentials, query, or fragment");
+        }
+        this.baseUrl = baseUrl.replaceAll("/+$", "");
+        this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5))
+                .followRedirects(HttpClient.Redirect.NEVER).build();
+    }
+
+    /** Sets a positive request timeout in milliseconds; defaults to 30 seconds. */
     public void setResponseTimeoutMs(Integer timeoutMs) {
+        if (timeoutMs == null || timeoutMs <= 0) throw new IllegalArgumentException("Timeout must be positive");
         this.timeoutMs = timeoutMs;
     }
 
-    public void setUserAgent(String userAgent) {
-        this.userAgent = userAgent;
-    }
+    /** Overrides the User-Agent for subsequent requests. */
+    public void setUserAgent(String userAgent) { this.userAgent = headerValue(userAgent); }
 
-    public ApiResponse submitPodcast(Map<String, String> mapParams) throws ListenApiException {
-        return this.post("podcasts/submit", mapParams);
-    }
-
-    public ApiResponse deletePodcast(Map<String, String> mapParams) throws ListenApiException {
-        String strId = mapParams.get("id");
-        mapParams.remove("id");
-        return this.delete("podcasts/" + strId, mapParams);
-    }
-
-    public ApiResponse batchFetchEpisodes(Map<String, String> mapParams) throws ListenApiException {
-        return this.post("episodes", mapParams);
-    }
-
-    public ApiResponse batchFetchPodcasts(Map<String, String> mapParams) throws ListenApiException {
-        return this.post("podcasts", mapParams);
-    }
-
-    public ApiResponse fetchMyPlaylists(Map<String, String> mapParams) throws ListenApiException {
-        return this.get("playlists", mapParams);
-    }
-
-    public ApiResponse fetchPlaylistById(Map<String, String> mapParams) throws ListenApiException {
-        String strId = mapParams.get("id");
-        mapParams.remove("id");
-        return this.get("playlists/" + strId, mapParams);
-    }
-
-    public ApiResponse fetchRecommendationsForEpisode(Map<String, String> mapParams) throws ListenApiException {
-        String strId = mapParams.get("id");
-        mapParams.remove("id");
-        return this.get("episodes/" + strId + "/recommendations", mapParams);
-    }
-
-    public ApiResponse fetchRecommendationsForPodcast(Map<String, String> mapParams) throws ListenApiException {
-        String strId = mapParams.get("id");
-        mapParams.remove("id");
-        return this.get("podcasts/" + strId + "/recommendations", mapParams);
-    }
-
-    public ApiResponse justListen() throws ListenApiException {
-        Map<String, String> parameters = new HashMap<>();
-        return this.get("just_listen", parameters);
-    }
-
-    public ApiResponse fetchPodcastLanguages() throws ListenApiException {
-        Map<String, String> parameters = new HashMap<>();
-        return this.get("languages", parameters);
-    }
-
-    public ApiResponse fetchPodcastRegions() throws ListenApiException {
-        Map<String, String> parameters = new HashMap<>();
-        return this.get("regions", parameters);
-    }
-
-    public ApiResponse fetchPodcastGenres(Map<String, String> mapParams) throws ListenApiException {
-        return this.get("genres", mapParams);
-    }
-
-    public ApiResponse fetchCuratedPodcastsListById(Map<String, String> mapParams) throws ListenApiException {
-        String strId = mapParams.get("id");
-        mapParams.remove("id");
-        return this.get("curated_podcasts/" + strId, mapParams);
-    }
-
-    public ApiResponse fetchCuratedPodcastsLists(Map<String, String> mapParams) throws ListenApiException {
-        return this.get("curated_podcasts", mapParams);
-    }
-
-    public ApiResponse fetchEpisodeById(Map<String, String> mapParams) throws ListenApiException {
-        String strId = mapParams.get("id");
-        mapParams.remove("id");
-        return this.get("episodes/" + strId, mapParams);
-    }
-
-    public ApiResponse fetchPodcastById(Map<String, String> mapParams) throws ListenApiException {
-        String strId = mapParams.get("id");
-        mapParams.remove("id");
-        return this.get("podcasts/" + strId, mapParams);
-    }
-
-    public ApiResponse fetchBestPodcasts(Map<String, String> mapParams) throws ListenApiException {
-        return this.get("best_podcasts", mapParams);
-    }
-
-    public ApiResponse typeahead(Map<String, String> mapParams) throws ListenApiException {
-        return this.get("typeahead", mapParams);
-    }
-
-    public ApiResponse spellcheck(Map<String, String> mapParams) throws ListenApiException {
-        return this.get("spellcheck", mapParams);
-    }    
-
-    public ApiResponse fetchRelatedSearches(Map<String, String> mapParams) throws ListenApiException {
-        return this.get("related_searches", mapParams);
-    }     
-    
-    public ApiResponse fetchTrendingSearches(Map<String, String> mapParams) throws ListenApiException {
-        return this.get("trending_searches", mapParams);
-    }          
-
-    public ApiResponse search(Map<String, String> mapParams) throws ListenApiException {
-        return this.get("search", mapParams);
-    }
-
-    public ApiResponse searchEpisodeTitles(Map<String, String> mapParams) throws ListenApiException {
-        return this.get("search_episode_titles", mapParams);
-    }
-
-    public ApiResponse fetchAudienceForPodcast(Map<String, String> mapParams) throws ListenApiException {
-        String strId = mapParams.get("id");
-        mapParams.remove("id");
-        return this.get("podcasts/" + strId + "/audience", mapParams);
-    }
-
-    public ApiResponse fetchPodcastsByDomain(Map<String, String> mapParams) throws ListenApiException {
-        String strDomainName = mapParams.get("domain_name");
-        mapParams.remove("domain_name");
-        return this.get("podcasts/domains/" + strDomainName, mapParams);
-    }    
-
-    protected String getUrl(String strPath) {
-        String strUrl = BASE_URL_TEST;
-        if (this.apiKey != null &&this.apiKey.length() > 0) {
-            strUrl = BASE_URL_PROD;
+    private static String headerValue(String value) {
+        if (value == null || value.isBlank() || value.chars().anyMatch(c -> c < 32 || c > 126)) {
+            throw new IllegalArgumentException("Header value must contain printable ASCII characters");
         }
-
-        strUrl = strUrl + "/" + strPath;
-        return strUrl;
+        return value;
     }
 
-    public HttpURLConnection getConnection(String strUrl) throws ListenApiException {
-        URL url;
+    protected String getUrl(String path) { return baseUrl + "/" + path.replaceFirst("^/", ""); }
+
+    /**
+     * Creates a configured legacy connection. API methods use java.net.http instead.
+     * @deprecated Prefer the endpoint methods; callers must close this connection themselves.
+     */
+    @Deprecated(since = "3.0.0")
+    public HttpURLConnection getConnection(String url) throws ListenApiException {
         try {
-            url = new URI(strUrl).toURL();
-        } catch (URISyntaxException e) {
-            throw new InvalidRequestException("URI Syntax error");
-        } catch (MalformedURLException e) {
-            throw new InvalidRequestException("Malformed Url");
-        }
-        try {
-            con = (HttpURLConnection) url.openConnection();
+            HttpURLConnection connection = (HttpURLConnection) URI.create(url).toURL().openConnection();
+            connection.setDoOutput(true);
+            connection.setRequestProperty("User-Agent", userAgent);
+            if (apiKey != null) connection.setRequestProperty("X-ListenAPI-Key", apiKey);
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(timeoutMs);
+            connection.setInstanceFollowRedirects(false);
+            return connection;
         } catch (IOException e) {
-            throw new ApiConnectionException("Failed to connect to Listen API.");
+            throw new ApiConnectionException("Failed to create an API connection", e);
+        } catch (IllegalArgumentException | ClassCastException e) {
+            throw new InvalidRequestException("Invalid HTTP URL", e);
         }
-
-        con.setDoOutput(true);
-        con.setRequestProperty("User-Agent", this.userAgent);
-        if (this.apiKey != null && this.apiKey.length() > 0) {
-            con.setRequestProperty("X-ListenAPI-Key", this.apiKey);
-        }
-        con.setConnectTimeout(5000);
-        con.setReadTimeout(this.timeoutMs);
-        con.setInstanceFollowRedirects(false);
-        return con;
     }
 
-    private ApiResponse post(String strPath, Map<String, String> mapParams) throws ListenApiException {
-        String strUrl = getUrl(strPath);
-
-        this.requestParams = mapParams;
-        String strParameters = getParamsString(mapParams);
-
-        con = getConnection(strUrl);
-        try {
-            con.setRequestMethod("POST");
-        } catch (ProtocolException e) {
-            throw new InvalidRequestException("Unexpected protocol.");
-        }
-        con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-
-        DataOutputStream out;
-        try {
-            out = new DataOutputStream(con.getOutputStream());
-            out.writeBytes(strParameters);
-            out.flush();
-            out.close();
-        } catch (IOException e) {
-            throw new InvalidRequestException("Invalid parameters.");
-        }
-        return getResponse();
-    }
-
-    private ApiResponse get(String strPath, Map<String, String> mapParams) throws ListenApiException {
-        String strUrl = getUrl(strPath);
-        String strParameters = getParamsString(mapParams);
-        strUrl = strUrl + "?" + strParameters;
-
-        con = getConnection(strUrl);
-        try {
-            con.setRequestMethod("GET");
-        } catch (ProtocolException e) {
-            throw new InvalidRequestException("Unexpected protocol");
-        }
-        return getResponse();
-    }
-
-    private ApiResponse delete(String strPath, Map<String, String> mapParams) throws ListenApiException {
-        String strUrl = getUrl(strPath);
-
-        String strParameters = getParamsString(mapParams);
-        strUrl = strUrl + "?" + strParameters;
-
-        con = getConnection(strUrl);
-        try {
-            con.setRequestMethod("DELETE");
-        } catch (ProtocolException e) {
-            throw new InvalidRequestException("Unexpected protocol");
-        }
-
-        return getResponse();
-    }
-
-    private ApiResponse getResponse() throws ListenApiException {
-        int status;
-        try {
-            status = con.getResponseCode();
-        } catch (IOException e) {
-            throw new ApiConnectionException("Failed to connect to Listen API servers.");
-        }
-        processStatus(status);
-
-        Reader streamReader = null;
-
-        if (status > 299) {
-            streamReader = new InputStreamReader(con.getErrorStream());
-        } else {
-            try {
-                streamReader = new InputStreamReader(con.getInputStream());
-            } catch (IOException e) {
-                throw new ApiConnectionException("Failed to connect to Listen API servers.");
+    @Override
+    protected ApiResponse requestApi(String method, String path, String[] pathNames,
+            String[] queryNames, Map<String, String> parameters) throws ListenApiException {
+        Map<String, String> remaining = new TreeMap<>();
+        if (parameters != null) {
+            for (Map.Entry<String, String> entry : parameters.entrySet()) {
+                if (entry.getKey() == null) throw new InvalidRequestException("Parameter names cannot be null");
+                if (entry.getValue() != null) remaining.put(entry.getKey(), entry.getValue());
             }
         }
-
-        BufferedReader in = new BufferedReader(streamReader);
-        String inputLine;
-        StringBuilder content = new StringBuilder();
+        for (String name : pathNames) {
+            String value = remaining.remove(name);
+            if (value == null || value.isBlank()) throw new InvalidRequestException("Missing path parameter: " + name);
+            String encoded = encode(value).replace("+", "%20").replace("*", "%2A");
+            if (value.equals(".") || value.equals("..")) encoded = encoded.replace(".", "%2E");
+            path = path.replace("{" + name + "}", encoded);
+        }
+        boolean hasBody = method.equals("POST") || method.equals("PUT");
+        Set<String> querySet = Set.copyOf(Arrays.asList(queryNames));
+        Map<String, String> query = new LinkedHashMap<>();
+        Map<String, String> body = new LinkedHashMap<>();
+        remaining.forEach((name, value) -> (hasBody && !querySet.contains(name) ? body : query).put(name, value));
+        String encodedQuery = getParamsString(query);
+        String url = getUrl(path) + (encodedQuery.isEmpty() ? "" : "?" + encodedQuery);
         try {
-            while ((inputLine = in.readLine()) != null) {
-                content.append(inputLine);
+            HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(url))
+                    .timeout(Duration.ofMillis(timeoutMs)).header("User-Agent", userAgent)
+                    .header("Accept", "application/json");
+            if (apiKey != null) request.header("X-ListenAPI-Key", apiKey);
+            if (hasBody) {
+                request.header("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+                        .method(method, HttpRequest.BodyPublishers.ofString(getParamsString(body), StandardCharsets.UTF_8));
+            } else {
+                request.method(method, HttpRequest.BodyPublishers.noBody());
             }
-            in.close();
+            HttpResponse<String> response = httpClient.send(request.build(),
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            ApiResponse result = new ApiResponse(response.body(), response.statusCode(), response.headers().map());
+            checkStatus(result);
+            return result;
         } catch (IOException e) {
-            throw new ListenApiException("Error on our end (unexpected server errors)");
-        }
-        con.disconnect();
-
-        return new ApiResponse(content.toString(), con);
-    }
-
-    private void processStatus(int intStatus) throws ListenApiException {
-        if (intStatus == 401) {
-            throw new AuthenticationException("Wrong api key or your account is suspended");
-        } else if (intStatus == 429) {
-            throw new RateLimitException("For FREE plan, exceeding the quota limit; or for all plans, sending too many requests too fast and exceeding the rate limit - https://www.listennotes.com/podcast-api/faq/#faq17");
-        } else if (intStatus == 404) {
-            throw new NotFoundException("Endpoint not exist, or podcast / episode not exist");
-        } else if (intStatus == 400) {
-            throw new InvalidRequestException(
-                    "Something wrong on your end (client side errors)," + " e.g., missing required parameters");
-        } else if (intStatus >= 500) {
-            throw new ListenApiException("Error on our end (unexpected server errors)");
+            throw new ApiConnectionException("Failed to connect to Listen API", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ApiConnectionException("API request interrupted", e);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidRequestException("Invalid request parameters", e);
         }
     }
 
-    protected static String getParamsString(Map<String, String> params) {
-        StringBuilder result = new StringBuilder();
-
-        for (Map.Entry<String, String> entry : params.entrySet()) {
-            try {
-                result.append(encodeUrlString(entry.getKey()));
-                result.append("=");
-                result.append(encodeUrlString(entry.getValue()));
-                result.append("&");
-            } catch (UnsupportedEncodingException e) {
-                // e.printStackTrace();
-            }
+    private static void checkStatus(ApiResponse response) throws ListenApiException {
+        int status = response.getStatusCode();
+        if (status >= 200 && status < 300) return;
+        String message = "Listen API returned HTTP " + status;
+        switch (status) {
+            case 400 -> throw new InvalidRequestException(message, response);
+            case 401 -> throw new AuthenticationException(message, response);
+            case 403 -> throw new PermissionDeniedException(message, response);
+            case 404 -> throw new NotFoundException(message, response);
+            case 429 -> throw new RateLimitException(message, response);
+            default -> throw new ListenApiException(message, response);
         }
+    }
 
-        String resultString = result.toString();
-        return resultString.length() > 0 ? resultString.substring(0, resultString.length() - 1) : resultString;
+    private static String encode(String value) { return URLEncoder.encode(value, StandardCharsets.UTF_8); }
+
+    protected static String getParamsString(Map<String, String> parameters) {
+        return parameters.entrySet().stream().filter(entry -> entry.getValue() != null)
+                .map(entry -> encode(entry.getKey()) + "=" + encode(entry.getValue())).collect(Collectors.joining("&"));
     }
 
     protected static Map<String, String> splitQuery(URL url) {
-        Map<String, String> queryPairs = new LinkedHashMap<>();
-        String query = url.getQuery();
-        String[] pairs = query.split("&");
-        for (String pair : pairs) {
-            int idx = pair.indexOf("=");
-            try {
-                queryPairs.put(decodeUrlString(pair.substring(0, idx)), decodeUrlString(pair.substring(idx + 1)));
-            } catch (UnsupportedEncodingException e) {
-                // e.printStackTrace();
-            }
+        Map<String, String> result = new LinkedHashMap<>();
+        if (url.getQuery() == null || url.getQuery().isEmpty()) return result;
+        for (String pair : url.getQuery().split("&")) {
+            String[] parts = pair.split("=", 2);
+            result.put(URLDecoder.decode(parts[0], StandardCharsets.UTF_8),
+                    parts.length == 2 ? URLDecoder.decode(parts[1], StandardCharsets.UTF_8) : "");
         }
-        return queryPairs;
-    }
-
-    private static String encodeUrlString(String value) throws UnsupportedEncodingException {
-        return URLEncoder.encode(value, "UTF-8");
-    }
-
-    private static String decodeUrlString(String value) throws UnsupportedEncodingException {
-        return URLDecoder.decode(value, "UTF-8");
+        return result;
     }
 }

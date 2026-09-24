@@ -1,9 +1,11 @@
 package com.listennotes.podcast_api.exception;
 
-public class NotFoundException extends ListenApiException {
-    private static final long serialVersionUID = 1234568L;
+import com.listennotes.podcast_api.ApiResponse;
 
-    public NotFoundException(String errorMessage) {
-        super(errorMessage);
-    }
+/** NotFound failure returned by the client. */
+public class NotFoundException extends ListenApiException {
+    private static final long serialVersionUID = 1234571L;
+    public NotFoundException(String message) { super(message); }
+    public NotFoundException(String message, Throwable cause) { super(message, cause); }
+    public NotFoundException(String message, ApiResponse response) { super(message, response); }
 }

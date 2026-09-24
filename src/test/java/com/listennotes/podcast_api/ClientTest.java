@@ -1,409 +1,250 @@
 package com.listennotes.podcast_api;
 
 import com.listennotes.podcast_api.exception.*;
-
-import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.net.HttpURLConnection;
-import java.net.URL;
-
-import junit.framework.TestCase;
-
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
+import javax.tools.ToolProvider;
 import org.json.JSONObject;
-import org.json.JSONArray;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.io.TempDir;
+import static org.junit.jupiter.api.Assertions.*;
 
-public final class ClientTest extends TestCase {
-    public void testSetApiKey() throws Exception {
-        Client client = new Client();
-        HttpURLConnection con = client.getConnection(client.getUrl("test"));
-        assertEquals(null, con.getRequestProperty("X-ListenAPI-Key"));
+class ClientTest {
+    @TestFactory Stream<DynamicTest> everyGeneratedMethodMatchesContract() throws Exception {
+        var operations = TestSupport.operations();
+        assertEquals(30, operations.size());
+        return operations.stream().map(operation -> DynamicTest.dynamicTest(operation.getString("func"), () -> {
+            try (var server = new TestSupport()) {
+                Map<String, String> parameters = new HashMap<>();
+                Map<String, String> expectedQuery = new HashMap<>();
+                Map<String, String> expectedBody = new HashMap<>();
+                String expectedPath = "/api/v2" + operation.getString("path");
+                for (Object raw : operation.getJSONArray("parameters")) {
+                    JSONObject parameter = (JSONObject) raw;
+                    String name = parameter.getString("name");
+                    String value = "value-" + name;
+                    parameters.put(name, value);
+                    switch (parameter.getString("in")) {
+                        case "path" -> expectedPath = expectedPath.replace("{" + name + "}", value);
+                        case "query" -> expectedQuery.put(name, value);
+                        case "body" -> expectedBody.put(name, value);
+                        default -> fail("Unknown parameter location");
+                    }
+                }
+                Map<String, String> immutable = Map.copyOf(parameters);
+                assertTrue(TestSupport.call(server.client(), operation, immutable).toJSON().getBoolean("ok"));
+                TestSupport.Request request = server.take();
+                assertEquals(operation.getString("method"), request.method());
+                assertEquals(expectedPath, request.uri().getRawPath());
+                assertEquals(expectedQuery, TestSupport.decode(request.uri().getRawQuery()));
+                assertEquals(expectedBody, TestSupport.decode(request.body()));
+                assertEquals(parameters, immutable);
+                assertEquals(List.of(Client.USER_AGENT), request.headers().get("User-Agent"));
+                assertNull(request.headers().get("X-ListenAPI-Key"));
+            }
+        }));
+    }
 
-        String strApiKey = "helloWorld";
-        client = new Client(strApiKey);
-        con = client.getConnection(client.getUrl("test"));
-        assertEquals(con.getRequestProperty("X-ListenAPI-Key"), strApiKey);
-
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("q", "test");
-
-        try {
-            client.search(parameters);
-        } catch (AuthenticationException e) {
-            assertEquals(401, client.con.getResponseCode());
-        } catch (Exception e) {
-            assertTrue(false);
+    @Test void encodingAndEmptyFields() throws Exception {
+        try (var server = new TestSupport()) {
+            Client client = server.client();
+            client.updatePlaylistItemNotes(Map.of("id", "list/+ ?#é", "item_id", "23/&", "notes", ""));
+            var request = server.take();
+            assertEquals("/api/v2/playlists/list%2F%2B%20%3F%23%C3%A9/items/23%2F%26", request.uri().getRawPath());
+            assertEquals("notes=", request.body());
+            assertNull(request.uri().getRawQuery());
+            assertEquals("PUT", request.method());
+            assertTrue(request.headers().get("Content-Type").get(0).startsWith("application/x-www-form-urlencoded"));
+            client.updatePlaylist(Map.of("id", "..", "description", ""));
+            assertEquals("/api/v2/playlists/%2E%2E", server.take().uri().getRawPath());
+            Map<String, String> params = new HashMap<>(Map.of("q", "café + &/?", "language", ""));
+            params.put("offset", null);
+            client.search(params);
+            request = server.take();
+            assertEquals("language=&q=caf%C3%A9+%2B+%26%2F%3F", request.uri().getRawQuery());
+            assertEquals("", request.body());
+            client.createPlaylist(Map.of("name", "café + &", "description", ""));
+            assertEquals("description=&name=caf%C3%A9+%2B+%26", server.take().body());
+            client.deletePlaylistItem(Map.of("id", "list", "item_id", "23"));
+            request = server.take();
+            assertEquals("DELETE", request.method());
+            assertEquals("", request.body());
+            assertNull(request.uri().getRawQuery());
         }
     }
 
-    public void testSearch() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("q", "test");
-        parameters.put("sort_by_date", "1");
-        ApiResponse response = tester.search(parameters);
-        assertEquals(200, tester.con.getResponseCode());
-        assertEquals(Client.USER_AGENT, tester.con.getRequestProperty("User-Agent"));
-
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONArray("results") instanceof JSONArray);
-        assertTrue(oj.optJSONArray("results").length() > 0);
-
-        assertEquals(tester.con.getRequestMethod(), "GET");
-
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/search");
-
-        Map<String, String> params = Client.splitQuery(u);
-        assertEquals(params.get("sort_by_date"), parameters.get("sort_by_date"));
-        assertEquals(params.get("q"), parameters.get("q"));
+    @Test void instanceSettingsAndConcurrentCallsAreIndependent() throws Exception {
+        try (var server = new TestSupport()) {
+            Client first = new Client("first-key", server.baseUrl());
+            Client second = new Client("second-key", server.baseUrl());
+            first.setUserAgent("first/1.0");
+            var executor = Executors.newFixedThreadPool(4);
+            try {
+                var calls = new ArrayList<java.util.concurrent.Future<ApiResponse>>();
+                for (int i = 0; i < 8; i++) {
+                    Client client = i % 2 == 0 ? first : second;
+                    calls.add(executor.submit(() -> { return client.justListen(); }));
+                }
+                for (var call : calls) assertEquals(200, call.get(10, TimeUnit.SECONDS).getStatusCode());
+                for (int i = 0; i < 8; i++) {
+                    var request = server.take();
+                    String key = request.headers().get("X-ListenAPI-Key").get(0);
+                    assertEquals(key.equals("first-key") ? "first/1.0" : Client.USER_AGENT,
+                            request.headers().get("User-Agent").get(0));
+                }
+            } finally { executor.shutdownNow(); }
+        }
     }
 
-    public void testSearchEpisodeTitles() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("q", "test");
-        parameters.put("podcast_id", "123");
-        ApiResponse response = tester.searchEpisodeTitles(parameters);
-        assertEquals(200, tester.con.getResponseCode());
-        assertEquals(Client.USER_AGENT, tester.con.getRequestProperty("User-Agent"));
-
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONArray("results") instanceof JSONArray);
-        assertTrue(oj.optJSONArray("results").length() > 0);
-
-        assertEquals(tester.con.getRequestMethod(), "GET");
-
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/search_episode_titles");
-
-        Map<String, String> params = Client.splitQuery(u);
-        assertEquals(params.get("podcast_id"), parameters.get("podcast_id"));
-        assertEquals(params.get("q"), parameters.get("q"));
+    @Test void bodyMethodsKeepDeclaredQueryParametersOutOfTheForm() throws Exception {
+        try (var server = new TestSupport()) {
+            server.client().requestApi("POST", "/future/{id}", new String[] {"id"}, new String[] {"cursor"},
+                    Map.of("id", "a/b", "cursor", "next + é", "notes", ""));
+            var request = server.take();
+            assertEquals("/api/v2/future/a%2Fb", request.uri().getRawPath());
+            assertEquals("cursor=next+%2B+%C3%A9", request.uri().getRawQuery());
+            assertEquals("notes=", request.body());
+        }
     }
 
-    public void testTypeahead() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("q", "test");
-        parameters.put("show_podcasts", "1");
-        ApiResponse response = tester.typeahead(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONArray("terms").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "GET");
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/typeahead");
-        Map<String, String> params = Client.splitQuery(u);
-        assertEquals(params.get("show_podcasts"), parameters.get("show_podcasts"));
-        assertEquals(params.get("q"), parameters.get("q"));
+    @Test void invalidParametersFailBeforeConnecting() throws Exception {
+        try (var server = new TestSupport()) {
+            Client client = server.client();
+            for (String missing : List.of("id", "item_id")) {
+                Map<String, String> params = new HashMap<>(Map.of("id", "list", "item_id", "23"));
+                params.remove(missing);
+                assertTrue(assertThrows(InvalidRequestException.class, () -> client.deletePlaylistItem(params))
+                        .getMessage().contains(missing));
+            }
+            assertThrows(InvalidRequestException.class, () -> client.fetchPodcastById(Map.of("id", " ")));
+            assertThrows(IllegalArgumentException.class, () -> client.setResponseTimeoutMs(0));
+            assertThrows(IllegalArgumentException.class, () -> client.setResponseTimeoutMs(null));
+            assertThrows(IllegalArgumentException.class, () -> client.setUserAgent("bad\r\nvalue"));
+            assertThrows(IllegalArgumentException.class, () -> new Client("bad\nkey"));
+            assertThrows(IllegalArgumentException.class, () -> new Client(null, "file:///tmp/a"));
+            assertTrue(server.requests.isEmpty());
+            assertEquals(Client.BASE_URL_TEST + "/search", new Client("  ").getUrl("search"));
+            assertEquals(Client.BASE_URL_PROD + "/search", new Client("key").getUrl("search"));
+        }
     }
 
-    public void testSpellcheck() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("q", "test");
-        ApiResponse response = tester.spellcheck(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONArray("tokens").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "GET");
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/spellcheck");
-        Map<String, String> params = Client.splitQuery(u);
-        assertEquals(params.get("q"), parameters.get("q"));
-    }    
-
-    public void testRelatedSearches() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("q", "test");
-        ApiResponse response = tester.fetchRelatedSearches(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONArray("terms").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "GET");
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/related_searches");
-        Map<String, String> params = Client.splitQuery(u);
-        assertEquals(params.get("q"), parameters.get("q"));
-    }    
-
-    public void testTrendingSearches() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        ApiResponse response = tester.fetchTrendingSearches(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONArray("terms").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "GET");
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/trending_searches");
-    }        
-
-    public void testFetchBestPodcasts() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("genre_id", "23");
-        ApiResponse response = tester.fetchBestPodcasts(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optInt("total", 0) > 0);
-        assertEquals(tester.con.getRequestMethod(), "GET");
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/best_podcasts");
-        Map<String, String> params = Client.splitQuery(u);
-        assertEquals(params.get("genre_id"), parameters.get("genre_id"));
+    @Test void responseStatusBodyHeadersAndLegacyOverloads() throws Exception {
+        try (var server = new TestSupport()) {
+            server.handler = request -> new TestSupport.Reply(201, "{\n\"name\":\"café\"\n}", Map.of(
+                    "X-ListenAPI-Usage", "19231", "X-ListenAPI-FreeQuota", "25000",
+                    "X-ListenAPI-Latency-Seconds", "0.056", "X-ListenAPI-NextBillingDate", "2026-09-26"));
+            ApiResponse result = server.client().createPlaylist(Map.of("name", "café"));
+            assertEquals(201, result.getStatusCode());
+            assertEquals("{\n\"name\":\"café\"\n}", result.toString());
+            assertEquals("café", result.toJSON().getString("name"));
+            assertEquals(19231, result.getUsage());
+            assertEquals(25000, result.getFreeQuota());
+            assertEquals(0.056, result.getLatencySeconds());
+            assertEquals("2026-09-26", result.getNextBillingDate());
+            assertEquals("19231", result.getHeader("x-LISTENapi-USAGE"));
+            assertThrows(UnsupportedOperationException.class, () -> result.getHeaders().clear());
+            server.handler = request -> new TestSupport.Reply(204, "");
+            ApiResponse empty = server.client().fetchPodcastLanguages();
+            assertEquals("", empty.toString());
+            assertNull(empty.getFreeQuota());
+            assertNull(empty.getUsage());
+            assertNull(empty.getNextBillingDate());
+            assertNull(empty.getLatencySeconds());
+            assertEquals(204, server.client().fetchPodcastRegions().getStatusCode());
+        }
     }
 
-    public void testPodcastById() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        String id = "23";
-        parameters.put("id", id);
-        ApiResponse response = tester.fetchPodcastById(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONArray("episodes").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "GET");
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/podcasts/" + id);
+    @TestFactory Stream<DynamicTest> httpFailuresKeepTheirResponseAndNeverFollowRedirects() {
+        Map<Integer, Class<? extends ListenApiException>> errors = Map.of(
+                400, InvalidRequestException.class, 401, AuthenticationException.class, 403, PermissionDeniedException.class,
+                404, NotFoundException.class, 429, RateLimitException.class, 500, ListenApiException.class,
+                302, ListenApiException.class, 418, ListenApiException.class);
+        return errors.entrySet().stream().map(entry -> DynamicTest.dynamicTest("HTTP " + entry.getKey(), () -> {
+            try (var server = new TestSupport()) {
+                server.handler = request -> new TestSupport.Reply(entry.getKey(), "{\"error\":\"exact café reason\"}",
+                        Map.of("Location", server.baseUrl() + "/redirect", "X-ListenAPI-Usage", "12"));
+                ListenApiException error = assertThrows(entry.getValue(), () -> server.client().justListen());
+                assertEquals(entry.getKey(), error.getStatusCode());
+                assertEquals("exact café reason", error.getResponse().toJSON().getString("error"));
+                assertEquals(12, error.getResponse().getUsage());
+                assertEquals(1, server.requests.size());
+            }
+        }));
     }
 
-    public void testEpisodeById() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        String id = "23";
-        parameters.put("id", id);
-        ApiResponse response = tester.fetchEpisodeById(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONObject("podcast").optString("rss").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "GET");
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/episodes/" + id);
+    @Test void timeoutsAndInterruptionRetainCause() throws Exception {
+        try (var server = new TestSupport()) {
+            CountDownLatch release = new CountDownLatch(1);
+            server.handler = request -> {
+                try { release.await(5, TimeUnit.SECONDS); }
+                catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                return new TestSupport.Reply(200, "{}");
+            };
+            try {
+                Client client = server.client();
+                client.setResponseTimeoutMs(500);
+                var error = assertThrows(ApiConnectionException.class, client::justListen);
+                assertInstanceOf(java.net.http.HttpTimeoutException.class, error.getCause());
+                assertNull(error.getResponse());
+                server.take();
+                AtomicBoolean interrupted = new AtomicBoolean();
+                Thread thread = new Thread(() -> {
+                    try { server.client().justListen(); }
+                    catch (ApiConnectionException e) {
+                        interrupted.set(Thread.currentThread().isInterrupted() && e.getCause() instanceof InterruptedException);
+                    } catch (ListenApiException e) { throw new AssertionError(e); }
+                });
+                thread.start();
+                server.take();
+                thread.interrupt();
+                thread.join(5000);
+                assertFalse(thread.isAlive());
+                assertTrue(interrupted.get());
+            } finally { release.countDown(); }
+        }
     }
 
-    public void testFetchCuratedPodcastsListById() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        String id = "23";
-        parameters.put("id", id);
-        ApiResponse response = tester.fetchCuratedPodcastsListById(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONArray("podcasts").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "GET");
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/curated_podcasts/" + id);
+    @Test @SuppressWarnings("deprecation")
+    void legacyConnectionAndResponseConstructorsRemainUsable() throws Exception {
+        try (var server = new TestSupport()) {
+            Client client = new Client("legacy-key", server.baseUrl());
+            var connection = client.getConnection(server.baseUrl() + "/search");
+            try {
+                assertTrue(connection.getDoOutput());
+                assertFalse(connection.getInstanceFollowRedirects());
+                try (var input = connection.getInputStream()) {
+                    ApiResponse response = new ApiResponse(new String(input.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8), connection);
+                    assertEquals(200, response.getStatusCode());
+                    assertTrue(response.toJSON().getBoolean("ok"));
+                }
+                assertEquals(List.of("legacy-key"), server.take().headers().get("X-ListenAPI-Key"));
+            } finally { connection.disconnect(); }
+        }
     }
 
-    public void testFetchCuratedPodcastsLists() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("page", "2");
-        ApiResponse response = tester.fetchCuratedPodcastsLists(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optInt("total", 0) > 0);
-        assertEquals(tester.con.getRequestMethod(), "GET");
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/curated_podcasts");
-        Map<String, String> params = Client.splitQuery(u);
-        assertEquals(params.get("page"), parameters.get("page"));
+    @Test void readmeExamplesCompileAgainstTheBuiltJar(@TempDir Path temp) throws Exception {
+        String readme = Files.readString(Path.of(System.getProperty("sdk.root"), "README.md"));
+        var matcher = Pattern.compile("```java\\n(.*?)\\n```", Pattern.DOTALL).matcher(readme);
+        List<String> arguments = new ArrayList<>(List.of("--release", "17", "-Xlint:all", "-Werror", "-classpath",
+                System.getProperty("sdk.compile.classpath"), "-d", temp.toString()));
+        int count = 0;
+        while (matcher.find()) {
+            String name = "Example" + count++;
+            Path file = temp.resolve(name + ".java");
+            Files.writeString(file, matcher.group(1).replace("public class Example", "public class " + name));
+            arguments.add(file.toString());
+        }
+        assertEquals(31, count);
+        assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, arguments.toArray(String[]::new)));
     }
-
-    public void testFetchPodcastGenres() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("top_level_only", "1");
-        ApiResponse response = tester.fetchPodcastGenres(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONArray("genres").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "GET");
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/genres");
-        Map<String, String> params = Client.splitQuery(u);
-        assertEquals(params.get("top_level_only"), parameters.get("top_level_only"));
-    }
-
-    public void testFetchPodcastRegions() throws Exception {
-        Client tester = new Client();
-        ApiResponse response = tester.fetchPodcastRegions();
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONObject("regions").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "GET");
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/regions");
-    }
-
-    public void testFetchPodcastLanguages() throws Exception {
-        Client tester = new Client();
-        ApiResponse response = tester.fetchPodcastLanguages();
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONArray("languages").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "GET");
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/languages");
-    }
-
-    public void testJustListen() throws Exception {
-        Client tester = new Client();
-
-        ApiResponse response = tester.justListen();
-        JSONObject oj = response.toJSON();
-        /* System.out.println( "DBG: " + oj.toString() ); */
-        assertTrue(oj.optInt("audio_length_sec", 0) > 0);
-        assertEquals(tester.con.getRequestMethod(), "GET");
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/just_listen");
-    }
-
-    public void testFetchRecommendationsForPodcast() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        String id = "23";
-        parameters.put("id", id);
-        ApiResponse response = tester.fetchRecommendationsForPodcast(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONArray("recommendations").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "GET");
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/podcasts/" + id + "/recommendations");
-    }
-
-    public void testFetchRecommendationsForEpisode() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        String id = "23";
-        parameters.put("id", id);
-        ApiResponse response = tester.fetchRecommendationsForEpisode(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONArray("recommendations").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "GET");
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/episodes/" + id + "/recommendations");
-    }
-
-    public void testFetchPlaylistById() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        String id = "23";
-        parameters.put("id", id);
-        ApiResponse response = tester.fetchPlaylistById(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONArray("items").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "GET");
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/playlists/" + id);
-    }
-
-    public void testFetchMyPlaylists() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("page", "2");
-        ApiResponse response = tester.fetchMyPlaylists(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONArray("playlists").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "GET");
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/playlists");
-        Map<String, String> params = Client.splitQuery(u);
-        assertEquals(params.get("page"), parameters.get("page"));
-    }
-
-    public void testBatchFetchPodcasts() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("ids", "2,222,333,4444");
-        ApiResponse response = tester.batchFetchPodcasts(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONArray("podcasts").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "POST");
-        assertEquals(parameters.get("ids"), tester.requestParams.get("ids"));
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/podcasts");
-    }
-
-    public void testBatchFetchEpisodes() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("ids", "2,222,333,4444");
-        ApiResponse response = tester.batchFetchEpisodes(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONArray("episodes").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "POST");
-        assertEquals(parameters.get("ids"), tester.requestParams.get("ids"));
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/episodes");
-    }
-
-    public void testDeletePodcast() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        String id = "23";
-        parameters.put("id", id);
-        parameters.put("reason", "User wants to delete podcast");
-        ApiResponse response = tester.deletePodcast(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optString("status").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "DELETE");
-
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/podcasts/" + id);
-
-        Map<String, String> params = Client.splitQuery(u);
-        assertEquals(params.get("reason"), parameters.get("reason"));
-    }
-
-    public void testSubmitPodcast() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("rss", "http://myrss.com/rss");
-        ApiResponse response = tester.submitPodcast(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optString("status").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "POST");
-        assertEquals(parameters.get("rss"), tester.requestParams.get("rss"));
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/podcasts/submit");
-    }
-
-    public void testFetchAudienceForPodcast() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        String id = "23";
-        parameters.put("id", id);
-        ApiResponse response = tester.fetchAudienceForPodcast(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONArray("by_regions").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "GET");
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/podcasts/" + id + "/audience");
-    }
-    
-    public void testFetchPodcastsByDomain() throws Exception {
-        Client tester = new Client();
-
-        Map<String, String> parameters = new HashMap<>();
-        String domainName = "npr.org";
-        parameters.put("domain_name", domainName);
-        ApiResponse response = tester.fetchPodcastsByDomain(parameters);
-        JSONObject oj = response.toJSON();
-        assertTrue(oj.optJSONArray("podcasts").length() > 0);
-        assertEquals(tester.con.getRequestMethod(), "GET");
-        URL u = tester.con.getURL();
-        assertEquals(u.getPath(), "/api/v2/podcasts/domains/" + domainName);
-    }    
 }
