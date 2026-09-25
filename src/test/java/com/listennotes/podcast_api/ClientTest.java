@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class ClientTest {
     @TestFactory Stream<DynamicTest> everyGeneratedMethodMatchesContract() throws Exception {
         var operations = TestSupport.operations();
-        assertEquals(30, operations.size());
+        assertEquals(31, operations.size());
         return operations.stream().map(operation -> DynamicTest.dynamicTest(operation.getString("func"), () -> {
             try (var server = new TestSupport()) {
                 Map<String, String> parameters = new HashMap<>();
@@ -83,6 +83,43 @@ class ClientTest {
         }
     }
 
+    @Test void deletePlaylistEncodesIdAndPreservesResponsesWithoutRetries() throws Exception {
+        try (var server = new TestSupport()) {
+            Client client = new Client("test-key", server.baseUrl());
+            Map<String, String> parameters = Map.of("id", "list/+ ?#é");
+            String body = new JSONObject().put("id", parameters.get("id")).put("deleted", true).toString();
+            server.handler = request -> new TestSupport.Reply(200, body, Map.of("X-ListenAPI-Usage", "12"));
+            ApiResponse response = client.deletePlaylist(parameters);
+            assertEquals(200, response.getStatusCode());
+            assertEquals(body, response.toString());
+            assertEquals(parameters.get("id"), response.toJSON().getString("id"));
+            assertTrue(response.toJSON().getBoolean("deleted"));
+            assertEquals(12, response.getUsage());
+            var request = server.take();
+            assertEquals("DELETE", request.method());
+            assertEquals("/api/v2/playlists/list%2F%2B%20%3F%23%C3%A9", request.uri().getRawPath());
+            assertNull(request.uri().getRawQuery());
+            assertEquals("", request.body());
+            assertNull(request.headers().get("Content-Type"));
+            assertEquals(List.of("test-key"), request.headers().get("X-ListenAPI-Key"));
+            assertEquals(Map.of("id", "list/+ ?#é"), parameters);
+
+            Map<Integer, Class<? extends ListenApiException>> errors = Map.of(
+                    401, AuthenticationException.class, 403, PermissionDeniedException.class,
+                    404, NotFoundException.class, 429, RateLimitException.class, 500, ListenApiException.class);
+            for (var entry : errors.entrySet()) {
+                server.handler = ignored -> new TestSupport.Reply(entry.getKey(), "{\"error\":\"Cannot delete playlist\"}",
+                        Map.of("X-ListenAPI-Usage", "13"));
+                ListenApiException error = assertThrows(entry.getValue(), () -> client.deletePlaylist(parameters));
+                assertEquals(entry.getKey(), error.getStatusCode());
+                assertEquals("Cannot delete playlist", error.getResponse().toJSON().getString("error"));
+                assertEquals(13, error.getResponse().getUsage());
+                assertEquals(1, server.requests.size());
+                server.take();
+            }
+        }
+    }
+
     @Test void instanceSettingsAndConcurrentCallsAreIndependent() throws Exception {
         try (var server = new TestSupport()) {
             Client first = new Client("first-key", server.baseUrl());
@@ -127,6 +164,14 @@ class ClientTest {
                         .getMessage().contains(missing));
             }
             assertThrows(InvalidRequestException.class, () -> client.fetchPodcastById(Map.of("id", " ")));
+            for (Map<String, String> parameters : List.of(Map.<String, String>of(), Map.of("id", ""), Map.of("id", " "))) {
+                assertTrue(assertThrows(InvalidRequestException.class, () -> client.deletePlaylist(parameters))
+                        .getMessage().contains("id"));
+            }
+            assertThrows(InvalidRequestException.class, () -> client.deletePlaylist(null));
+            Map<String, String> nullId = new HashMap<>();
+            nullId.put("id", null);
+            assertThrows(InvalidRequestException.class, () -> client.deletePlaylist(nullId));
             assertThrows(IllegalArgumentException.class, () -> client.setResponseTimeoutMs(0));
             assertThrows(IllegalArgumentException.class, () -> client.setResponseTimeoutMs(null));
             assertThrows(IllegalArgumentException.class, () -> client.setUserAgent("bad\r\nvalue"));
@@ -244,7 +289,7 @@ class ClientTest {
             Files.writeString(file, matcher.group(1).replace("public class Example", "public class " + name));
             arguments.add(file.toString());
         }
-        assertEquals(31, count);
+        assertEquals(32, count);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, arguments.toArray(String[]::new)));
     }
 }

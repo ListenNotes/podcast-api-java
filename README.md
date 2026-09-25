@@ -10,13 +10,13 @@ Questions? Contact [hello@listennotes.com](mailto:hello@listennotes.com).
 
 ## Installation
 
-Version 3.0.0 requires **Java 17 or later**. It uses the JDK HTTP client and
+Version 3 requires **Java 17 or later**. It uses the JDK HTTP client and
 `org.json` for JSON responses. The Gradle wrapper is included for development.
 
 Gradle, with Maven Central enabled:
 
 ```groovy
-implementation 'com.listennotes:podcast-api:3.0.0'
+implementation 'com.listennotes:podcast-api:3.1.0'
 ```
 
 Maven:
@@ -25,11 +25,11 @@ Maven:
 <dependency>
   <groupId>com.listennotes</groupId>
   <artifactId>podcast-api</artifactId>
-  <version>3.0.0</version>
+  <version>3.1.0</version>
 </dependency>
 ```
 
-These coordinates become installable when 3.0.0 is published to Maven Central.
+These coordinates become installable when 3.1.0 is published to Maven Central.
 
 ## Usage
 
@@ -61,6 +61,13 @@ so `Map.of("id", playlistId, "item_id", itemId, "notes", "")` clears notes.
 `justListen()`, `fetchPodcastLanguages()`, and `fetchPodcastRegions()` also
 retain their existing no-argument overloads.
 
+Since 3.1.0, `deletePlaylist(Map.of("id", playlistId))` permanently deletes a
+playlist and all references and notes saved in it. This cannot be undone;
+add a confirmation step in your application's UI before calling it. The actual
+episodes and podcasts remain in the Listen Notes podcast database. Only playlists
+owned by your admin API account can be modified. Deleting an already deleted
+playlist returns 404 (`NotFoundException`).
+
 Clients retain their own credentials and settings and can make concurrent
 requests. The default request timeout is 30 seconds and connection timeout is
 5 seconds. Use `setResponseTimeoutMs(10000)` or `setUserAgent("my-app/1.0")`
@@ -91,7 +98,7 @@ restore the thread's interrupt flag.
 
 - Upgrade the runtime from Java 8 to Java 17 or newer.
 - All 25 existing method names, constructors, map arguments, and JSON response
-  helpers remain available. Five playlist write methods are added below.
+  helpers remain available. Six playlist write methods are added below.
 - Path values are now encoded and caller maps are no longer modified.
 - All non-2xx responses throw, including 403 and redirects; inspect
   `exception.getResponse()` for server error details instead of matching messages.
@@ -171,6 +178,7 @@ separate from creating the draft. Do not store credentials or signing keys in Gi
 - [`fetchPodcastsByDomain`](#fetchpodcastsbydomain) — `GET /podcasts/domains/{domain_name}`
 - [`createPlaylist`](#createplaylist) — `POST /playlists`
 - [`updatePlaylist`](#updateplaylist) — `PUT /playlists/{id}`
+- [`deletePlaylist`](#deleteplaylist) — `DELETE /playlists/{id}`
 - [`addPlaylistItem`](#addplaylistitem) — `POST /playlists/{id}/items`
 - [`deletePlaylistItem`](#deleteplaylistitem) — `DELETE /playlists/{id}/items/{item_id}`
 - [`updatePlaylistItemNotes`](#updateplaylistitemnotes) — `PUT /playlists/{id}/items/{item_id}`
@@ -965,6 +973,36 @@ public class Example {
 ```
 
 [Full API documentation](https://www.listennotes.com/api/docs/#put-api-v2-playlists-id)
+
+### deletePlaylist
+
+Delete a playlist.
+
+`DELETE /playlists/{id}`
+
+Permanently delete a playlist, including all episode and podcast references saved in this specific playlist and their notes. The actual episodes and podcasts remain in the Listen Notes podcast database.
+
+**Warning: Deletion cannot be undone. Once deleted, the playlist is gone, regardless of how many episodes or podcasts it contains. You, the developer, are responsible for adding a confirmation step in your app's UI before calling this endpoint to prevent accidental deletion.**
+
+Only playlists owned by your admin API account can be modified; contributor membership does not grant write access.
+
+```java
+import java.util.HashMap;
+import java.util.Map;
+import com.listennotes.podcast_api.Client;
+import com.listennotes.podcast_api.exception.ListenApiException;
+
+public class Example {
+    public static void main(String[] args) throws ListenApiException {
+        Client client = new Client(System.getenv("LISTEN_API_KEY"));
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("id", "m1pe7z60bsw");
+        System.out.println(client.deletePlaylist(parameters).toJSON().toString(2));
+    }
+}
+```
+
+[Full API documentation](https://www.listennotes.com/api/docs/#delete-api-v2-playlists-id)
 
 ### addPlaylistItem
 
