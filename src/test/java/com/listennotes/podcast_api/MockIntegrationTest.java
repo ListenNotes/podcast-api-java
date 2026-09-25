@@ -15,6 +15,11 @@ class MockIntegrationTest {
             ApiResponse response = TestSupport.call(client, operation, TestSupport.examples(operation));
             assertTrue(List.of(200, 201).contains(response.getStatusCode()));
             assertFalse(response.toJSON().isEmpty());
+            if (operation.getString("operationId").equals("deletePlaylist")) {
+                assertEquals(200, response.getStatusCode());
+                assertTrue(response.toJSON().getBoolean("deleted"));
+                assertEquals(operation.getJSONObject("example_params").getString("id"), response.toJSON().getString("id"));
+            }
         }));
     }
     @Test void unicodeQuery() throws Exception {

@@ -294,6 +294,16 @@ public abstract class ApiMethods {
                 new String[] {"id"}, new String[] {}, parameters);
     }
 
+    /** Delete a playlist.
+     * @param parameters path, query, and form values
+     * @return API response, including response headers
+     * @throws ListenApiException on invalid input, connection failure, or a non-2xx response
+     */
+    public ApiResponse deletePlaylist(Map<String, String> parameters) throws ListenApiException {
+        return requestApi("DELETE", "/playlists/{id}",
+                new String[] {"id"}, new String[] {}, parameters);
+    }
+
     /** Add an episode or podcast to a playlist.
      * @param parameters path, query, and form values
      * @return API response, including response headers
