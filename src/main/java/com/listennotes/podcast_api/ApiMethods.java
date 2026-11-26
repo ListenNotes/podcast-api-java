@@ -334,4 +334,44 @@ public abstract class ApiMethods {
                 new String[] {"id", "item_id"}, new String[] {}, parameters);
     }
 
+    /** Estimate episode transcription cost
+     * @param parameters path, query, and form values
+     * @return API response, including response headers
+     * @throws ListenApiException on invalid input, connection failure, or a non-2xx response
+     */
+    public ApiResponse estimateEpisodeTranscription(Map<String, String> parameters) throws ListenApiException {
+        return requestApi("GET", "/episodes/{id}/transcript/estimate",
+                new String[] {"id"}, new String[] {}, parameters);
+    }
+
+    /** Request episode transcription
+     * @param parameters path, query, and form values
+     * @return API response, including response headers
+     * @throws ListenApiException on invalid input, connection failure, or a non-2xx response
+     */
+    public ApiResponse transcribeEpisode(Map<String, String> parameters) throws ListenApiException {
+        return requestApi("POST", "/episodes/{id}/transcript",
+                new String[] {"id"}, new String[] {}, parameters);
+    }
+
+    /** Get episode transcription status and downloads
+     * @param parameters path, query, and form values
+     * @return API response, including response headers
+     * @throws ListenApiException on invalid input, connection failure, or a non-2xx response
+     */
+    public ApiResponse getEpisodeTranscript(Map<String, String> parameters) throws ListenApiException {
+        return requestApi("GET", "/episodes/{id}/transcript",
+                new String[] {"id"}, new String[] {}, parameters);
+    }
+
+    /** List completed episode transcripts
+     * @param parameters path, query, and form values
+     * @return API response, including response headers
+     * @throws ListenApiException on invalid input, connection failure, or a non-2xx response
+     */
+    public ApiResponse listTranscripts(Map<String, String> parameters) throws ListenApiException {
+        return requestApi("GET", "/transcripts",
+                new String[] {}, new String[] {"limit", "cursor"}, parameters);
+    }
+
 }

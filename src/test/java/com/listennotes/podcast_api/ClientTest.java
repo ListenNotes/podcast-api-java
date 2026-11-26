@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class ClientTest {
     @TestFactory Stream<DynamicTest> everyGeneratedMethodMatchesContract() throws Exception {
         var operations = TestSupport.operations();
-        assertEquals(31, operations.size());
+        assertEquals(35, operations.size());
         return operations.stream().map(operation -> DynamicTest.dynamicTest(operation.getString("func"), () -> {
             try (var server = new TestSupport()) {
                 Map<String, String> parameters = new HashMap<>();
@@ -289,7 +289,7 @@ class ClientTest {
             Files.writeString(file, matcher.group(1).replace("public class Example", "public class " + name));
             arguments.add(file.toString());
         }
-        assertEquals(32, count);
+        assertEquals(36, count);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, arguments.toArray(String[]::new)));
     }
 }

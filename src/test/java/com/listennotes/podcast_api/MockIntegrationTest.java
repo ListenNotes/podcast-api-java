@@ -1,6 +1,5 @@
 package com.listennotes.podcast_api;
 
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.*;
@@ -13,9 +12,20 @@ class MockIntegrationTest {
     @TestFactory Stream<DynamicTest> allMethodsAgainstPublicMock() throws Exception {
         return TestSupport.operations().stream().map(operation -> DynamicTest.dynamicTest(operation.getString("func"), () -> {
             ApiResponse response = TestSupport.call(client, operation, TestSupport.examples(operation));
-            assertTrue(List.of(200, 201).contains(response.getStatusCode()));
+            String name = operation.getString("operationId");
+            int status = switch (name) {
+                case "createPlaylist", "addPlaylistItem" -> 201;
+                case "transcribeEpisode" -> 202;
+                default -> 200;
+            };
+            assertEquals(status, response.getStatusCode());
             assertFalse(response.toJSON().isEmpty());
-            if (operation.getString("operationId").equals("deletePlaylist")) {
+            if (name.equals("transcribeEpisode")) {
+                assertEquals("queued", response.toJSON().getString("status"));
+            } else if (name.equals("getEpisodeTranscript")) {
+                assertEquals("completed", response.toJSON().getString("status"));
+                assertFalse(response.toJSON().getJSONObject("download_urls").isEmpty());
+            } else if (name.equals("deletePlaylist")) {
                 assertEquals(200, response.getStatusCode());
                 assertTrue(response.toJSON().getBoolean("deleted"));
                 assertEquals(operation.getJSONObject("example_params").getString("id"), response.toJSON().getString("id"));
